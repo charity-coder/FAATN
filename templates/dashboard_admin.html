@@ -1,0 +1,65 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block dashboard_content %}
+<div class="topbar">
+  <h1>⚙️ FAATN Administration Portal</h1>
+  <p class="text-muted">User Management · Verification · Data Analytics · Project Tracking · Reporting</p>
+</div>
+
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-icon teal">👥</div>
+    <div class="stat-content">
+      <h3>{{ total_users }}</h3>
+      <p>Total Members</p>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon amber">💼</div>
+    <div class="stat-content">
+      <h3>{{ total_opps }}</h3>
+      <p>Opportunities</p>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon purple">💡</div>
+    <div class="stat-content">
+      <h3>{{ total_innov }}</h3>
+      <p>Innovations</p>
+    </div>
+  </div>
+</div>
+
+<div class="dash-card">
+  <div class="dash-card-header"><h3>Recent Registrations</h3></div>
+  <div class="dash-card-body">
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Location</th>
+            <th>Joined</th>
+            <th>Verified</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td><strong>{{ u.full_name }}</strong></td>
+            <td>{{ u.email }}</td>
+            <td><span class="status-pill status-pending">{{ u.role }}</span></td>
+            <td>{{ u.location_state or '—' }}</td>
+            <td>{{ u.created_at.strftime('%d %b %Y') }}</td>
+            <td>{% if u.verified %}✓{% else %}—{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

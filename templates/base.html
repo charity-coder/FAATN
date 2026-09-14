@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}FAATN-GATE{% endblock %} | Gateway for Artisans & Technical Experts</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  <!-- Rotating background images (5 slides) -->
+  <div class="bg-slideshow" id="bgSlideshow">
+    <div class="bg-slide active" style="background-image:url('{{ url_for('static', filename='images/backgrounds/bg1.jpg') }}')"></div>
+    <div class="bg-slide" style="background-image:url('{{ url_for('static', filename='images/backgrounds/bg2.jpg') }}')"></div>
+    <div class="bg-slide" style="background-image:url('{{ url_for('static', filename='images/backgrounds/bg3.jpg') }}')"></div>
+    <div class="bg-slide" style="background-image:url('{{ url_for('static', filename='images/backgrounds/bg4.jpg') }}')"></div>
+    <div class="bg-slide" style="background-image:url('{{ url_for('static', filename='images/backgrounds/bg5.jpg') }}')"></div>
+  </div>
+  <div class="bg-3d"></div>
+  <div class="bg-grid"></div>
+  <div class="floating-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+  </div>
+
+  {% block navbar %}
+  <nav class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="{{ url_for('index') }}" class="logo">
+        <img src="{{ url_for('static', filename='images/logo/faatn_logo.png') }}" alt="FAATN-GATE" class="logo-img">
+        <div class="logo-text">FAATN<span>-GATE</span></div>
+      </a>
+      <ul class="nav-links" id="navLinks">
+        <li><a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}active{% endif %}">Home</a></li>
+        <li><a href="{{ url_for('about') }}" class="{% if request.endpoint == 'about' %}active{% endif %}">About</a></li>
+        <li><a href="{{ url_for('gate') }}" class="{% if request.endpoint == 'gate' %}active{% endif %}">GATE Entry</a></li>
+        <li><a href="{{ url_for('contact') }}" class="{% if request.endpoint == 'contact' %}active{% endif %}">Contact</a></li>
+        <li class="nav-mobile-auth">
+          {% if current_user.is_authenticated %}
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-sm">Dashboard</a>
+            <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm">Logout</a>
+          {% else %}
+            <a href="{{ url_for('login') }}" class="btn btn-outline btn-sm">Login</a>
+            <a href="{{ url_for('register') }}" class="btn btn-primary btn-sm">Register</a>
+          {% endif %}
+        </li>
+      </ul>
+      <div class="nav-actions">
+        {% if current_user.is_authenticated %}
+          <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-sm nav-desktop-only">Dashboard</a>
+          <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm nav-desktop-only">Logout</a>
+        {% else %}
+          <a href="{{ url_for('login') }}" class="btn btn-outline btn-sm nav-desktop-only">Login</a>
+          <a href="{{ url_for('register') }}" class="btn btn-primary btn-sm nav-desktop-only">Register</a>
+        {% endif %}
+        <button type="button" class="nav-toggle" id="navToggle" aria-label="Open menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </nav>
+  <div class="nav-overlay" id="navOverlay"></div>
+  {% endblock %}
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div style="position:fixed;top:80px;right:1.5rem;z-index:2000;max-width:380px;">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}" style="animation: slideIn 0.4s ease;">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+
+  {% block footer %}
+  <footer class="footer">
+    <p><strong>FAATN-GATE</strong> — People → Skills → Innovation → Opportunities → Impact</p>
+    <p style="margin-top:0.5rem;">Federation of Artisans and Technicians of Nigeria (FAATN)</p>
+    <p style="margin-top:0.4rem;font-size:0.9rem;">
+      Green Station, 5 Amiyi/Hospital Road, Umuaka, Njaba LGA, Imo State<br>
+      Tel: +234 915 496 8109 · +234 803 677 1117 · Email: faatnigeria@gmail.com
+    </p>
+    <p style="margin-top:1rem;font-size:0.8rem;opacity:0.7;">
+      CAC/IT/103696 · Established 2017 · © 2026 FAATN
+    </p>
+  </footer>
+  {% endblock %}
+
+  <script>
+    // Navbar scroll effect
+    window.addEventListener('scroll', () => {
+      document.getElementById('navbar')?.classList.toggle('scrolled', window.scrollY > 40);
+    });
+    // Mobile nav toggle
+    (function() {
+      const toggle = document.getElementById('navToggle');
+      const links = document.getElementById('navLinks');
+      const overlay = document.getElementById('navOverlay');
+      function closeNav() {
+        links?.classList.remove('open');
+        overlay?.classList.remove('open');
+        toggle?.classList.remove('open');
+        document.body.classList.remove('nav-open');
+      }
+      function openNav() {
+        links?.classList.add('open');
+        overlay?.classList.add('open');
+        toggle?.classList.add('open');
+        document.body.classList.add('nav-open');
+      }
+      toggle?.addEventListener('click', () => {
+        if (links?.classList.contains('open')) closeNav(); else openNav();
+      });
+      overlay?.addEventListener('click', closeNav);
+      links?.querySelectorAll('a').forEach(a => a.addEventListener('click', closeNav));
+    })();
+    // Auto-hide flash messages
+    setTimeout(() => {
+      document.querySelectorAll('.alert').forEach(el => {
+        el.style.opacity = '0';
+        el.style.transition = 'opacity 0.5s';
+        setTimeout(() => el.remove(), 500);
+      });
+    }, 4500);
+    // Background image slideshow (5 images)
+    (function() {
+      const slides = document.querySelectorAll('#bgSlideshow .bg-slide');
+      if (!slides.length) return;
+      let i = 0;
+      setInterval(() => {
+        slides[i].classList.remove('active');
+        i = (i + 1) % slides.length;
+        slides[i].classList.add('active');
+      }, 6000);
+    })();
+  </script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

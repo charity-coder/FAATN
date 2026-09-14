@@ -1,0 +1,183 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Artisan Dashboard{% endblock %}
+
+{% block dashboard_content %}
+<div class="topbar">
+  <div>
+    <h1>Welcome, {{ current_user.full_name.split()[0] }} 👋</h1>
+    <p class="text-muted" style="font-size:0.9rem;">Member Portal (Artisan · Technician · Engineer) — Profile · Chat · Training · Opportunities · Innovation</p>
+  </div>
+  <div class="topbar-actions">
+    <a href="https://wa.me/2349154968109?text=Hello%20FAATN%20Head%20Office%2C%20I%20need%20assistance%20via%20FAATN-GATE."
+       target="_blank" rel="noopener"
+       class="btn btn-sm"
+       style="background:#25D366;color:#fff;border:none;box-shadow:0 6px 18px rgba(37,211,102,0.35);">
+      💬 WhatsApp Head Office
+    </a>
+    <a href="{{ url_for('notifications') }}" class="btn btn-outline btn-sm">
+      🔔 {% if unread_notifs %}<span class="badge">{{ unread_notifs }}</span>{% endif %}
+    </a>
+    <a href="{{ url_for('messages') }}" class="btn btn-outline btn-sm">
+      ✉️ {% if unread_messages %}<span class="badge">{{ unread_messages }}</span>{% endif %}
+    </a>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-icon teal">📚</div>
+    <div class="stat-content">
+      <h3>{{ trainings_count }}</h3>
+      <p>Trainings</p>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon amber">💼</div>
+    <div class="stat-content">
+      <h3>{{ applications_count }}</h3>
+      <p>Applications</p>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon purple">💡</div>
+    <div class="stat-content">
+      <h3>{{ innovations_count }}</h3>
+      <p>Innovations</p>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon blue">📍</div>
+    <div class="stat-content">
+      <h3>{{ current_user.location_state or '—' }}</h3>
+      <p>Location</p>
+    </div>
+  </div>
+</div>
+
+<!-- Main Grid -->
+<div class="dash-grid">
+  <!-- Left column -->
+  <div>
+    <!-- Opportunities -->
+    <div class="dash-card mb-3">
+      <div class="dash-card-header">
+        <h3>🔥 Latest Opportunities</h3>
+        <a href="{{ url_for('opportunities') }}" class="btn btn-sm btn-outline">View all</a>
+      </div>
+      <div class="dash-card-body">
+        {% if recent_opportunities %}
+          {% for opp in recent_opportunities %}
+          <div class="list-item">
+            <div class="list-item-icon">💼</div>
+            <div class="list-item-content">
+              <h4>{{ opp.title }}</h4>
+              <p>{{ opp.type|capitalize }} · {{ opp.location }} · {{ opp.posted_by }}</p>
+            </div>
+            <span class="status-pill status-pending">{{ opp.type }}</span>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty-state"><p>No opportunities yet.</p></div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Innovations -->
+    <div class="dash-card">
+      <div class="dash-card-header">
+        <h3>💡 My Innovations</h3>
+        <a href="{{ url_for('innovations') }}" class="btn btn-sm btn-outline">Manage</a>
+      </div>
+      <div class="dash-card-body">
+        {% if recent_innovations %}
+          {% for innov in recent_innovations %}
+          <div class="list-item">
+            <div class="list-item-icon">💡</div>
+            <div class="list-item-content">
+              <h4>{{ innov.title }}</h4>
+              <p>Stage: {{ innov.status|capitalize }}</p>
+            </div>
+            <span class="status-pill status-{{ innov.status }}">{{ innov.status }}</span>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty-state">
+            <p>No innovations submitted yet.</p>
+            <a href="{{ url_for('innovations') }}" class="btn btn-primary btn-sm mt-2">Submit an Idea</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Right column -->
+  <div>
+    <!-- Profile Snapshot -->
+    <div class="dash-card mb-3">
+      <div class="dash-card-header">
+        <h3>👤 Profile Snapshot</h3>
+        <a href="{{ url_for('profile') }}" class="btn btn-sm btn-outline">Edit</a>
+      </div>
+      <div class="dash-card-body">
+        <p style="margin-bottom:0.6rem;"><strong>{{ current_user.full_name }}</strong></p>
+        <p class="text-muted" style="font-size:0.9rem;margin-bottom:0.4rem;">{{ current_user.occupation or 'Occupation not set' }} · {{ current_user.specialty or '' }}</p>
+        <p class="text-muted" style="font-size:0.85rem;margin-bottom:0.8rem;">
+          📍 {{ current_user.location_community or '' }}{% if current_user.location_lga %}, {{ current_user.location_lga }}{% endif %}{% if current_user.location_state %}, {{ current_user.location_state }}{% endif %}
+        </p>
+        {% if current_user.skills %}
+        <p style="font-size:0.85rem;"><strong>Skills:</strong> {{ current_user.skills }}</p>
+        {% endif %}
+        {% if current_user.verified %}
+        <span class="status-pill status-completed" style="margin-top:0.75rem;">✓ Verified</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div class="dash-card mb-3">
+      <div class="dash-card-header">
+        <h3>🔔 Notifications</h3>
+        <a href="{{ url_for('notifications') }}" class="btn btn-sm btn-outline">All</a>
+      </div>
+      <div class="dash-card-body">
+        {% if notifications %}
+          {% for n in notifications %}
+          <div class="list-item">
+            <div class="list-item-content">
+              <h4 style="font-size:0.9rem;">{{ n.title }}</h4>
+              <p>{{ n.message[:80] }}{% if n.message|length > 80 %}…{% endif %}</p>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="text-muted" style="font-size:0.9rem;">No notifications.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Recent Trainings -->
+    <div class="dash-card">
+      <div class="dash-card-header">
+        <h3>📚 My Trainings</h3>
+        <a href="{{ url_for('trainings') }}" class="btn btn-sm btn-outline">Browse</a>
+      </div>
+      <div class="dash-card-body">
+        {% if recent_trainings %}
+          {% for e in recent_trainings %}
+          <div class="list-item">
+            <div class="list-item-content">
+              <h4 style="font-size:0.9rem;">{{ e.training.title }}</h4>
+              <p>{{ e.training.provider }}</p>
+            </div>
+            <span class="status-pill status-{{ e.status }}">{{ e.status }}</span>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="text-muted" style="font-size:0.9rem;">Not enrolled in any training yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

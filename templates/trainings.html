@@ -1,0 +1,66 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Training{% endblock %}
+
+{% block dashboard_content %}
+<div class="topbar">
+  <h1>📚 Training Route</h1>
+  <p class="text-muted">Identify Skill Gap → Match with Provider → Training → Assessment → Certification → Profile Updated</p>
+</div>
+
+{% if my_enrollments %}
+<div class="dash-card mb-3">
+  <div class="dash-card-header"><h3>My Enrollments</h3></div>
+  <div class="dash-card-body">
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Training</th>
+            <th>Provider</th>
+            <th>Duration</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in my_enrollments %}
+          <tr>
+            <td><strong>{{ e.training.title }}</strong></td>
+            <td>{{ e.training.provider }}</td>
+            <td>{{ e.training.duration }}</td>
+            <td><span class="status-pill status-{{ e.status }}">{{ e.status }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="dash-card">
+  <div class="dash-card-header"><h3>Available Trainings</h3></div>
+  <div class="dash-card-body">
+    {% if available %}
+      {% for t in available %}
+      <div class="list-item" style="align-items:center;">
+        <div class="list-item-icon">📚</div>
+        <div class="list-item-content">
+          <h4>{{ t.title }}</h4>
+          <p>{{ t.provider }} · {{ t.duration }} · {{ t.location }}</p>
+          <p class="text-muted" style="font-size:0.85rem;margin-top:0.3rem;">{{ t.description[:120] }}{% if t.description|length > 120 %}…{% endif %}</p>
+        </div>
+        {% if t.id in enrolled_ids %}
+          <span class="status-pill status-enrolled">Enrolled</span>
+        {% else %}
+          <form method="POST" action="{{ url_for('enroll_training', training_id=t.id) }}">
+            <button type="submit" class="btn btn-primary btn-sm">Enroll</button>
+          </form>
+        {% endif %}
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state"><p>No trainings available at the moment.</p></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

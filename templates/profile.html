@@ -1,0 +1,119 @@
+{% extends "dashboard_base.html" %}
+{% block title %}My Profile{% endblock %}
+
+{% block dashboard_content %}
+<div class="topbar">
+  <h1>My Profile</h1>
+</div>
+
+<!-- Email verification banner -->
+{% if not current_user.email_verified %}
+<div class="alert alert-warning" style="margin-bottom:1.25rem;">
+  ⚠️ Your email is not verified.
+  <form method="POST" action="{{ url_for('resend_verification') }}" style="display:inline;">
+    <button type="submit" class="btn btn-sm btn-outline" style="margin-left:0.5rem;">Resend verification link</button>
+  </form>
+</div>
+{% else %}
+<div class="alert alert-success" style="margin-bottom:1.25rem;">
+  ✓ Email verified ({{ current_user.email }})
+</div>
+{% endif %}
+
+<div class="dash-grid" style="grid-template-columns: 280px 1fr; gap: 1.5rem;">
+  <!-- Avatar card -->
+  <div class="dash-card">
+    <div class="dash-card-header"><h3>Profile Picture</h3></div>
+    <div class="dash-card-body" style="text-align:center;">
+      {% if current_user.profile_pic %}
+        <img src="{{ url_for('static', filename='uploads/avatars/' + current_user.profile_pic) }}"
+             alt="Profile"
+             style="width:140px;height:140px;border-radius:50%;object-fit:cover;border:3px solid rgba(13,148,136,0.5);box-shadow:0 8px 24px rgba(0,0,0,0.3);">
+      {% else %}
+        <div class="user-avatar" style="width:140px;height:140px;font-size:3rem;margin:0 auto;border-radius:50%;">
+          {{ current_user.full_name[0] }}
+        </div>
+      {% endif %}
+      <p class="text-muted" style="font-size:0.85rem;margin-top:1rem;">
+        JPG, PNG, GIF or WebP · Max 2 MB
+      </p>
+    </div>
+  </div>
+
+  <!-- Profile form -->
+  <div class="dash-card">
+    <div class="dash-card-header">
+      <h3>Identity, Location, Skills & Portfolio</h3>
+    </div>
+    <div class="dash-card-body">
+      <form method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+          <label>Change Profile Picture</label>
+          <input type="file" name="profile_pic" class="form-control" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" name="full_name" class="form-control" value="{{ current_user.full_name }}">
+          </div>
+          <div class="form-group">
+            <label>Phone</label>
+            <input type="tel" name="phone" class="form-control" value="{{ current_user.phone or '' }}">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>State</label>
+            <input type="text" name="location_state" class="form-control" value="{{ current_user.location_state or '' }}">
+          </div>
+          <div class="form-group">
+            <label>LGA</label>
+            <input type="text" name="location_lga" class="form-control" value="{{ current_user.location_lga or '' }}">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Community</label>
+          <input type="text" name="location_community" class="form-control" value="{{ current_user.location_community or '' }}">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Occupation / Trade</label>
+            <input type="text" name="occupation" class="form-control" value="{{ current_user.occupation or '' }}">
+          </div>
+          <div class="form-group">
+            <label>Specialty</label>
+            <input type="text" name="specialty" class="form-control" value="{{ current_user.specialty or '' }}">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Skills & Capabilities</label>
+          <input type="text" name="skills" class="form-control" value="{{ current_user.skills or '' }}">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Years of Experience</label>
+            <input type="number" name="experience_years" class="form-control" value="{{ current_user.experience_years or 0 }}">
+          </div>
+          <div class="form-group">
+            <label>Needs / Opportunities Sought</label>
+            <input type="text" name="needs" class="form-control" value="{{ current_user.needs or '' }}">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Portfolio / Experience Summary</label>
+          <textarea name="portfolio" class="form-control" rows="4">{{ current_user.portfolio or '' }}</textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Save Profile</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

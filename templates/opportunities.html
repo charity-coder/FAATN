@@ -1,0 +1,65 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Opportunities{% endblock %}
+
+{% block dashboard_content %}
+<div class="topbar">
+  <h1>💼 Opportunity Route</h1>
+  <p class="text-muted">Opportunity Posted → Define Requirements → Location / Skill Match → Matching Engine → Qualified Members → Engagement / Award</p>
+</div>
+
+{% if my_apps %}
+<div class="dash-card mb-3">
+  <div class="dash-card-header"><h3>My Applications</h3></div>
+  <div class="dash-card-body">
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr><th>Opportunity</th><th>Type</th><th>Status</th><th>Applied</th></tr>
+        </thead>
+        <tbody>
+          {% for a in my_apps %}
+          <tr>
+            <td><strong>{{ a.opportunity.title }}</strong></td>
+            <td>{{ a.opportunity.type }}</td>
+            <td><span class="status-pill status-{{ a.status }}">{{ a.status }}</span></td>
+            <td>{{ a.applied_at.strftime('%d %b %Y') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="dash-card">
+  <div class="dash-card-header"><h3>Open Opportunities</h3></div>
+  <div class="dash-card-body">
+    {% if opportunities %}
+      {% for opp in opportunities %}
+      <div class="list-item" style="align-items:flex-start;">
+        <div class="list-item-icon">💼</div>
+        <div class="list-item-content">
+          <h4>{{ opp.title }}</h4>
+          <p>{{ opp.type|capitalize }} · {{ opp.location }} · Posted by {{ opp.posted_by }}</p>
+          <p class="text-muted" style="font-size:0.85rem;margin-top:0.35rem;">{{ opp.description[:140] }}{% if opp.description|length > 140 %}…{% endif %}</p>
+          <p style="font-size:0.8rem;margin-top:0.4rem;"><strong>Skills:</strong> {{ opp.skills_needed }}</p>
+        </div>
+        <div style="text-align:right;min-width:110px;">
+          {% if opp.id in applied_ids %}
+            <span class="status-pill status-pending">Applied</span>
+          {% else %}
+            <form method="POST" action="{{ url_for('apply_opportunity', opp_id=opp.id) }}">
+              <input type="hidden" name="cover_note" value="Interested via FAATN-GATE matching.">
+              <button type="submit" class="btn btn-primary btn-sm">Apply</button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state"><p>No open opportunities right now.</p></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

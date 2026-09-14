@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-content">
+    <div>
+      <div class="hero-badge">
+        <span>🇳🇬</span> Gateway for Artisans & Technical Experts
+      </div>
+      <h1>
+        Connecting <span class="gradient-text">Skills</span>,<br>
+        Innovation & Opportunities
+      </h1>
+      <p>
+        FAATN-GATE is the digital gateway of the Federation of Artisans and Technicians of Nigeria — mobilising, organising and empowering artisans and technicians through training, innovation, strategic partnerships and access to modern tools and opportunities nationwide.
+      </p>
+      <div class="hero-actions">
+        <a href="{{ url_for('gate') }}" class="btn btn-primary">Enter the GATE →</a>
+        <a href="{{ url_for('register') }}" class="btn btn-outline">Register Free</a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-item">
+          <div class="stat-value">9+</div>
+          <div class="stat-label">Entry Pathways</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">4</div>
+          <div class="stat-label">Phased Rollout</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">∞</div>
+          <div class="stat-label">Impact Potential</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="card-3d card-side-1">
+        <div class="card-icon">🛠️</div>
+        <h4>Artisans</h4>
+        <p>Register skills, find training & contracts</p>
+      </div>
+      <div class="card-3d card-main">
+        <div class="card-icon">🚪</div>
+        <h4>FAATN-GATE</h4>
+        <p>One secure entry point connecting people, skills, innovation and opportunities across Nigeria.</p>
+      </div>
+      <div class="card-3d card-side-2">
+        <div class="card-icon">💡</div>
+        <h4>Innovation</h4>
+        <p>From idea → prototype → commercialisation</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- VISION / MISSION / IMPACT -->
+<section class="section" style="padding-top:0;">
+  <div class="container">
+    <div class="modules-grid">
+      <div class="module-card">
+        <div class="module-number">01</div>
+        <h3 style="margin-bottom:0.75rem;">🎯 Our Vision</h3>
+        <p class="text-muted">To become the foremost organisation promoting innovation, indigenous technology, and sustainable development through Nigerian artisans and technicians.</p>
+      </div>
+      <div class="module-card">
+        <div class="module-number">02</div>
+        <h3 style="margin-bottom:0.75rem;">🚀 Our Mission</h3>
+        <p class="text-muted">To mobilise, organise and empower artisans and technicians through training, innovation, strategic partnerships, technology transfer, renewable energy development, artificial intelligence, business ethics, research collaboration, and access to modern tools and opportunities.</p>
+      </div>
+      <div class="module-card">
+        <div class="module-number">03</div>
+        <h3 style="margin-bottom:0.75rem;">🇳🇬 Our Commitment</h3>
+        <p class="text-muted">Supporting the Federal Government’s industrialisation agenda by promoting innovation, strengthening technical capacity, encouraging local manufacturing, creating employment, and positioning Nigerian artisans and technicians as key drivers of national development.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- GATE ENTRY -->
+<section class="section" id="gate">
+  <div class="container">
+    <div class="section-header">
+      <h2>2. FAATN-GATE <span class="gradient-text">Entry Point</span></h2>
+      <p>Choose your pathway. The system routes you to the right services, matching engine and dashboard.</p>
+    </div>
+    <div class="gate-grid">
+      <a href="{{ url_for('register') }}?role=artisan" class="gate-card artisan">
+        <div class="gate-icon">👷</div>
+        <h3>I am an Artisan</h3>
+        <p>Carpenters, welders, tailors, builders…</p>
+      </a>
+      <a href="{{ url_for('register') }}?role=technician" class="gate-card technician">
+        <div class="gate-icon">🔧</div>
+        <h3>I am a Technician</h3>
+        <p>Electrical, mechanical, solar, ICT…</p>
+      </a>
+      <a href="{{ url_for('register') }}?role=engineer" class="gate-card engineer">
+        <div class="gate-icon">👷‍♂️</div>
+        <h3>Engineer / Technical Professional</h3>
+        <p>NSE members, consultants, specialists</p>
+      </a>
+      <a href="{{ url_for('register') }}?role=institution" class="gate-card institution">
+        <div class="gate-icon">🏛️</div>
+        <h3>Institution</h3>
+        <p>Universities, TVET, Research centres</p>
+      </a>
+      <a href="{{ url_for('register') }}?role=government" class="gate-card government">
+        <div class="gate-icon">👥</div>
+        <h3>Government / Development Partner</h3>
+        <p>Ministries, agencies, NGOs, donors</p>
+      </a>
+      <a href="{{ url_for('register') }}?role=industry" class="gate-card industry">
+        <div class="gate-icon">🏭</div>
+        <h3>Industry / Private Sector</h3>
+        <p>Manufacturers, contractors, employers</p>
+      </a>
+      <a href="{{ url_for('register') }}?role=innovation" class="gate-card innovation">
+        <div class="gate-icon">💡</div>
+        <h3>I have an Innovation / Idea</h3>
+        <p>From concept to commercialisation</p>
+      </a>
+      <a href="{{ url_for('register') }}?role=opportunity" class="gate-card opportunity">
+        <div class="gate-icon">💼</div>
+        <h3>I have an Opportunity</h3>
+        <p>Jobs, contracts, grants, projects</p>
+      </a>
+      <a href="{{ url_for('register') }}?role=partner" class="gate-card partner">
+        <div class="gate-icon">🤝</div>
+        <h3>I want to Partner with FAATN</h3>
+        <p>Strategic collaboration</p>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FUNCTIONAL MODULES -->
+<section class="section" id="modules">
+  <div class="container">
+    <div class="section-header">
+      <h2>5. Functional <span class="gradient-text">Modules</span></h2>
+      <p>End-to-end services that turn registration into real impact.</p>
+    </div>
+    <div class="modules-grid">
+      <div class="module-card">
+        <div class="module-number">01</div>
+        <h3>Member Directory</h3>
+        <p class="text-muted mt-1">Search & Match skilled artisans and technicians by location, occupation and specialty.</p>
+      </div>
+      <div class="module-card">
+        <div class="module-number">02</div>
+        <h3>Training</h3>
+        <p class="text-muted mt-1">Skill-gap identification → training providers → assessment → certification → profile update.</p>
+      </div>
+      <div class="module-card">
+        <div class="module-number">03</div>
+        <h3>Innovation</h3>
+        <p class="text-muted mt-1">Idea submission → screening → technical assessment → prototype → deployment.</p>
+      </div>
+      <div class="module-card">
+        <div class="module-number">04</div>
+        <h3>Projects</h3>
+        <p class="text-muted mt-1">Implementation tracking from concept to delivery with partner collaboration.</p>
+      </div>
+      <div class="module-card">
+        <div class="module-number">05</div>
+        <h3>Opportunities</h3>
+        <p class="text-muted mt-1">Jobs, contracts and grants matched to qualified members via intelligent routing.</p>
+      </div>
+      <div class="module-card">
+        <div class="module-number">06</div>
+        <h3>Market Linkage</h3>
+        <p class="text-muted mt-1">Connect products & services of artisans to industry buyers and export channels.</p>
+      </div>
+      <div class="module-card">
+        <div class="module-number">07</div>
+        <h3>Technical Support</h3>
+        <p class="text-muted mt-1">Access to NSE engineers and technical professionals for guidance and quality assurance.</p>
+      </div>
+      <div class="module-card">
+        <div class="module-number">08</div>
+        <h3>Partner Collaboration</h3>
+        <p class="text-muted mt-1">Structured engagement with government, industry and development partners.</p>
+      </div>
+      <div class="module-card">
+        <div class="module-number">09</div>
+        <h3>Monitoring & Reports</h3>
+        <p class="text-muted mt-1">Analytics, verification, documentation and impact reporting for all stakeholders.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section">
+  <div class="container" style="text-align:center;">
+    <h2 style="margin-bottom:1rem;">Ready to join the GATE?</h2>
+    <p class="text-muted" style="max-width:520px;margin:0 auto 2rem;">
+      Whether you are an artisan looking for work, a technician seeking certification, or an industry partner needing talent — start here.
+    </p>
+    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
+      <a href="{{ url_for('register') }}" class="btn btn-primary">Create Free Account</a>
+      <a href="{{ url_for('login') }}" class="btn btn-outline">Login to Dashboard</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

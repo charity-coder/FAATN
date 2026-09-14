@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Contact{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top:8rem;">
+  <div class="container">
+    <div class="section-header">
+      <h2>Contact <span class="gradient-text">FAATN</span></h2>
+      <p>Federation of Artisans and Technicians of Nigeria — Get in touch with us</p>
+    </div>
+
+    <div class="dash-grid" style="max-width:1000px;margin:0 auto 3rem;">
+      <!-- Office -->
+      <div class="dash-card">
+        <div class="dash-card-header"><h3>📍 Registered Office</h3></div>
+        <div class="dash-card-body" style="line-height:1.9;">
+          <p><strong>Green Station</strong></p>
+          <p>5 Amiyi/Hospital Road</p>
+          <p>Umuaka, Njaba Local Government Area</p>
+          <p>Imo State, Nigeria</p>
+          <p style="margin-top:1rem;font-size:0.85rem;color:var(--text-muted);">
+            CAC Registration No. CAC/IT/103696<br>
+            Established 2017
+          </p>
+        </div>
+      </div>
+
+      <!-- Contact details -->
+      <div class="dash-card">
+        <div class="dash-card-header"><h3>📞 Contact Information</h3></div>
+        <div class="dash-card-body" style="line-height:2;">
+          <p>
+            <strong>Telephone</strong><br>
+            <a href="tel:+2349154968109" style="color:var(--primary-light);text-decoration:none;">+234 915 496 8109</a><br>
+            <a href="tel:+2348036771117" style="color:var(--primary-light);text-decoration:none;">+234 803 677 1117</a>
+          </p>
+          <p style="margin-top:1rem;">
+            <a href="https://wa.me/2349154968109?text=Hello%20FAATN%20Head%20Office%2C%20I%20need%20assistance."
+               target="_blank" rel="noopener"
+               class="btn btn-sm"
+               style="background:#25D366;color:#fff;border:none;">
+              💬 WhatsApp Head Office
+            </a>
+          </p>
+          <p style="margin-top:1rem;">
+            <strong>Email</strong><br>
+            <a href="mailto:faatnigeria@gmail.com" style="color:var(--primary-light);text-decoration:none;">faatnigeria@gmail.com</a>
+          </p>
+          <p style="margin-top:1rem;">
+            <strong>Bankers</strong><br>
+            Zenith Bank Plc
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Leadership quick contacts -->
+    <div class="section-header" style="margin-bottom:1.5rem;">
+      <h2 style="font-size:1.5rem;">National Leadership</h2>
+    </div>
+    <div class="modules-grid" style="margin-bottom:3rem;">
+      <div class="module-card">
+        <h3>Chairman</h3>
+        <p class="text-muted mt-1">Professor Mazi Ojiaku</p>
+      </div>
+      <div class="module-card">
+        <h3>Secretary</h3>
+        <p class="text-muted mt-1">Barrister Ajoku Philip Ogadinma</p>
+      </div>
+      <div class="module-card">
+        <h3>Director, Resource Mobilisation</h3>
+        <p class="text-muted mt-1">Professor Mrs. Edna Matthews-Njoku</p>
+      </div>
+      <div class="module-card">
+        <h3>Director, Media Communications</h3>
+        <p class="text-muted mt-1">Hon. Louis Duru</p>
+      </div>
+      <div class="module-card">
+        <h3>Director, Artisans Training</h3>
+        <p class="text-muted mt-1">Engr. Uche Ihugba</p>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div style="text-align:center;padding:2rem;background:var(--glass);border-radius:var(--radius);border:1px solid var(--glass-border);max-width:600px;margin:0 auto;">
+      <h3 style="margin-bottom:0.75rem;">Join FAATN-GATE</h3>
+      <p class="text-muted" style="margin-bottom:1.25rem;">
+        Register as an artisan, technician or partner and connect to skills, innovation and opportunities.
+      </p>
+      <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
+        <a href="{{ url_for('register') }}" class="btn btn-primary">Register Free</a>
+        <a href="{{ url_for('gate') }}" class="btn btn-outline">Enter the GATE</a>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Dashboard{% endblock %} | FAATN-GATE</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="bg-slideshow" id="bgSlideshow">
+    <div class="bg-slide active" style="background-image:url('{{ url_for('static', filename='images/backgrounds/bg1.jpg') }}')"></div>
+    <div class="bg-slide" style="background-image:url('{{ url_for('static', filename='images/backgrounds/bg2.jpg') }}')"></div>
+    <div class="bg-slide" style="background-image:url('{{ url_for('static', filename='images/backgrounds/bg3.jpg') }}')"></div>
+    <div class="bg-slide" style="background-image:url('{{ url_for('static', filename='images/backgrounds/bg4.jpg') }}')"></div>
+    <div class="bg-slide" style="background-image:url('{{ url_for('static', filename='images/backgrounds/bg5.jpg') }}')"></div>
+  </div>
+  <div class="bg-3d"></div>
+  <div class="bg-grid"></div>
+
+  <div class="dashboard">
+    <!-- Mobile top bar -->
+    <div class="mobile-dash-bar" id="mobileDashBar">
+      <button type="button" class="nav-toggle" id="sidebarToggle" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+      <a href="{{ url_for('index') }}" class="logo" style="gap:0.5rem;">
+        <img src="{{ url_for('static', filename='images/logo/faatn_logo.png') }}" alt="FAATN" class="logo-img" style="width:48px;height:48px;">
+        <span class="logo-text" style="font-size:1rem;">FAATN<span>-GATE</span></span>
+      </a>
+      <a href="https://wa.me/2349154968109?text=Hello%20FAATN%20Head%20Office" target="_blank" rel="noopener" class="btn btn-sm" style="background:#25D366;color:#fff;border:none;padding:0.4rem 0.6rem;">💬</a>
+    </div>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <a href="{{ url_for('index') }}" class="logo">
+          <img src="{{ url_for('static', filename='images/logo/faatn_logo.png') }}" alt="FAATN-GATE" class="logo-img">
+          <div class="logo-text">FAATN<span>-GATE</span></div>
+        </a>
+      </div>
+
+      <ul class="sidebar-nav">
+        <li><a href="{{ url_for('artisan_dashboard') }}" class="{% if request.endpoint == 'artisan_dashboard' %}active{% endif %}">
+          <span class="icon">📊</span> Overview
+        </a></li>
+        <li><a href="{{ url_for('profile') }}" class="{% if request.endpoint == 'profile' %}active{% endif %}">
+          <span class="icon">👤</span> My Profile
+        </a></li>
+        <li><a href="{{ url_for('directory') }}" class="{% if request.endpoint == 'directory' %}active{% endif %}">
+          <span class="icon">🤝</span> Find Members
+        </a></li>
+        <li><a href="{{ url_for('messages') }}" class="{% if request.endpoint in ['messages', 'chat'] %}active{% endif %}">
+          <span class="icon">💬</span> Chat & Messages
+        </a></li>
+        <li><a href="{{ url_for('trainings') }}" class="{% if request.endpoint == 'trainings' %}active{% endif %}">
+          <span class="icon">📚</span> Training
+        </a></li>
+        <li><a href="{{ url_for('opportunities') }}" class="{% if request.endpoint == 'opportunities' %}active{% endif %}">
+          <span class="icon">💼</span> Opportunities
+        </a></li>
+        <li><a href="{{ url_for('innovations') }}" class="{% if request.endpoint == 'innovations' %}active{% endif %}">
+          <span class="icon">💡</span> Innovation
+        </a></li>
+        <li><a href="{{ url_for('notifications') }}" class="{% if request.endpoint == 'notifications' %}active{% endif %}">
+          <span class="icon">🔔</span> Notifications
+        </a></li>
+        <li>
+          <a href="https://wa.me/2349154968109?text=Hello%20FAATN%20Head%20Office%2C%20I%20need%20assistance%20via%20FAATN-GATE."
+             target="_blank" rel="noopener"
+             style="color:#25D366;">
+            <span class="icon">💬</span> WhatsApp Head Office
+          </a>
+        </li>
+        {% if current_user.role == 'admin' %}
+        <li><a href="{{ url_for('admin_dashboard') }}" class="{% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
+          <span class="icon">⚙️</span> Admin
+        </a></li>
+        {% endif %}
+      </ul>
+
+      <div class="sidebar-user">
+        <div class="user-info">
+          {% if current_user.profile_pic %}
+            <img src="{{ url_for('static', filename='uploads/avatars/' + current_user.profile_pic) }}"
+                 alt="" class="user-avatar" style="object-fit:cover;padding:0;">
+          {% else %}
+            <div class="user-avatar">{{ current_user.full_name[0] }}</div>
+          {% endif %}
+          <div class="user-meta">
+            <h4>{{ current_user.full_name.split()[0] }}</h4>
+            <span>{{ current_user.role }}{% if current_user.email_verified %} · ✓{% endif %}</span>
+          </div>
+        </div>
+        <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm" style="width:100%;margin-top:0.9rem;">Logout</a>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main-content">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      {% block dashboard_content %}{% endblock %}
+    </main>
+  </div>
+
+  <!-- Floating WhatsApp to Head Office -->
+  <a href="https://wa.me/2349154968109?text=Hello%20FAATN%20Head%20Office%2C%20I%20need%20assistance%20via%20FAATN-GATE."
+     target="_blank" rel="noopener" class="whatsapp-float" title="Chat with FAATN Head Office on WhatsApp">
+    <span style="font-size:1.6rem;">💬</span>
+  </a>
+  <style>
+    .whatsapp-float {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 999;
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: #25D366;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 24px rgba(37, 211, 102, 0.45);
+      text-decoration: none;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .whatsapp-float:hover {
+      transform: scale(1.08);
+      box-shadow: 0 12px 28px rgba(37, 211, 102, 0.55);
+      color: #fff;
+    }
+  </style>
+  <script>
+    setTimeout(() => {
+      document.querySelectorAll('.alert').forEach(el => {
+        el.style.opacity = '0';
+        el.style.transition = 'opacity 0.5s';
+        setTimeout(() => el.remove(), 500);
+      });
+    }, 4000);
+    // Mobile sidebar toggle
+    (function() {
+      const toggle = document.getElementById('sidebarToggle');
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      function closeSb() {
+        sidebar?.classList.remove('open');
+        overlay?.classList.remove('open');
+        toggle?.classList.remove('open');
+        document.body.classList.remove('nav-open');
+      }
+      function openSb() {
+        sidebar?.classList.add('open');
+        overlay?.classList.add('open');
+        toggle?.classList.add('open');
+        document.body.classList.add('nav-open');
+      }
+      toggle?.addEventListener('click', () => {
+        if (sidebar?.classList.contains('open')) closeSb(); else openSb();
+      });
+      overlay?.addEventListener('click', closeSb);
+      sidebar?.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+        if (window.innerWidth <= 768) closeSb();
+      }));
+    })();
+    (function() {
+      const slides = document.querySelectorAll('#bgSlideshow .bg-slide');
+      if (!slides.length) return;
+      let i = 0;
+      setInterval(() => {
+        slides[i].classList.remove('active');
+        i = (i + 1) % slides.length;
+        slides[i].classList.add('active');
+      }, 6000);
+    })();
+  </script>
+</body>
+</html>

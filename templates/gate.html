@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}GATE Entry{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top:8rem;">
+  <div class="container">
+    <div class="section-header">
+      <h2>Enter the <span class="gradient-text">GATE</span></h2>
+      <p>Select the option that best describes you. You will be guided through registration and routed to the appropriate dashboard and services.</p>
+    </div>
+    <div class="gate-grid">
+      <a href="{{ url_for('register') }}?role=artisan" class="gate-card artisan">
+        <div class="gate-icon">👷</div>
+        <h3>I am an Artisan</h3>
+        <p>Skilled craftsmen & women</p>
+      </a>
+      <a href="{{ url_for('register') }}?role=technician" class="gate-card technician">
+        <div class="gate-icon">🔧</div>
+        <h3>I am a Technician</h3>
+        <p>Technical trades & services</p>
+      </a>
+      <a href="{{ url_for('register') }}?role=engineer" class="gate-card engineer">
+        <div class="gate-icon">👷‍♂️</div>
+        <h3>Engineer / Technical Professional</h3>
+        <p>Professionals & specialists</p>
+      </a>
+      <a href="{{ url_for('register') }}?role=institution" class="gate-card institution">
+        <div class="gate-icon">🏛️</div>
+        <h3>I represent an Institution</h3>
+        <p>University, TVET, Research</p>
+      </a>
+      <a href="{{ url_for('register') }}?role=government" class="gate-card government">
+        <div class="gate-icon">👥</div>
+        <h3>Government / Development Partner</h3>
+        <p>Public sector & development</p>
+      </a>
+      <a href="{{ url_for('register') }}?role=industry" class="gate-card industry">
+        <div class="gate-icon">🏭</div>
+        <h3>Industry / Private Sector</h3>
+        <p>Employers & buyers</p>
+      </a>
+      <a href="{{ url_for('register') }}?role=innovation" class="gate-card innovation">
+        <div class="gate-icon">💡</div>
+        <h3>I have an Innovation / Idea</h3>
+        <p>Innovators & inventors</p>
+      </a>
+      <a href="{{ url_for('register') }}?role=opportunity" class="gate-card opportunity">
+        <div class="gate-icon">💼</div>
+        <h3>I have an Opportunity</h3>
+        <p>Jobs, contracts, grants</p>
+      </a>
+      <a href="{{ url_for('register') }}?role=partner" class="gate-card partner">
+        <div class="gate-icon">🤝</div>
+        <h3>I want to Partner with FAATN</h3>
+        <p>Strategic partners</p>
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}

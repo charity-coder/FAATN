@@ -1,0 +1,98 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Chat with {{ other.full_name }}{% endblock %}
+
+{% block dashboard_content %}
+<div class="topbar">
+  <div>
+    <h1>💬 Chat with {{ other.full_name }}</h1>
+    <p class="text-muted" style="text-transform:capitalize;">
+      {{ other.role }} · {{ other.occupation or '' }}{% if other.specialty %} · {{ other.specialty }}{% endif %}
+      {% if other.location_state %} · 📍 {{ other.location_state }}{% endif %}
+    </p>
+  </div>
+  <div class="topbar-actions">
+    <a href="{{ url_for('directory') }}" class="btn btn-outline btn-sm">← Find Members</a>
+    <a href="{{ url_for('messages') }}" class="btn btn-outline btn-sm">All Chats</a>
+  </div>
+</div>
+
+<div class="dash-card" style="max-width:800px;">
+  <div class="dash-card-header" style="display:flex;align-items:center;gap:0.85rem;">
+    {% if other.profile_pic %}
+      <img src="{{ url_for('static', filename='uploads/avatars/' + other.profile_pic) }}"
+           alt="" class="user-avatar" style="object-fit:cover;padding:0;">
+    {% else %}
+      <div class="user-avatar">{{ other.full_name[0] }}</div>
+    {% endif %}
+    <div>
+      <h3 style="margin:0;">{{ other.full_name }}</h3>
+      <span class="text-muted" style="font-size:0.8rem;">{{ other.skills[:60] if other.skills else other.occupation or other.role }}</span>
+    </div>
+  </div>
+
+  <div class="dash-card-body" style="min-height:320px;max-height:480px;overflow-y:auto;display:flex;flex-direction:column;gap:0.75rem;" id="chatThread">
+    {% if thread %}
+      {% for m in thread %}
+      <div style="display:flex;{% if m.sender_id == current_user.id %}justify-content:flex-end;{% else %}justify-content:flex-start;{% endif %}">
+        <div style="
+          max-width:75%;
+          padding:0.75rem 1rem;
+          border-radius:16px;
+          {% if m.sender_id == current_user.id %}
+            background:linear-gradient(135deg, rgba(13,148,136,0.35), rgba(20,184,166,0.2));
+            border:1px solid rgba(13,148,136,0.35);
+            border-bottom-right-radius:4px;
+          {% else %}
+            background:rgba(255,255,255,0.08);
+            border:1px solid var(--glass-border);
+            border-bottom-left-radius:4px;
+          {% endif %}
+        ">
+          {% if m.image_filename %}
+            <a href="{{ url_for('static', filename='uploads/chat/' + m.image_filename) }}" target="_blank">
+              <img src="{{ url_for('static', filename='uploads/chat/' + m.image_filename) }}"
+                   alt="Shared image"
+                   style="max-width:100%;max-height:240px;border-radius:10px;margin-bottom:0.5rem;display:block;">
+            </a>
+          {% endif %}
+          {% if m.body and m.body != '[Image]' %}
+            <p style="margin:0;font-size:0.95rem;line-height:1.5;">{{ m.body }}</p>
+          {% endif %}
+          <p style="margin:0.35rem 0 0;font-size:0.7rem;opacity:0.65;text-align:right;">
+            {{ m.created_at.strftime('%d %b %Y · %H:%M') }}
+          </p>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state" style="padding:2rem;">
+        <div class="icon">💬</div>
+        <p>No messages yet. Say hello, share a photo, or ask for assistance!</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <div style="padding:1rem 1.4rem;border-top:1px solid var(--glass-border);">
+    <form method="POST" enctype="multipart/form-data" style="display:flex;flex-direction:column;gap:0.6rem;">
+      <div style="display:flex;gap:0.75rem;align-items:flex-end;">
+        <div class="form-group" style="flex:1;margin:0;">
+          <textarea name="body" class="form-control" rows="2" placeholder="Type your message… Ask for help or share advice." style="resize:vertical;"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Send</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.75rem;">
+        <label class="btn btn-outline btn-sm" style="cursor:pointer;margin:0;">
+          📷 Attach image
+          <input type="file" name="image" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display:none;" id="chatImageInput" onchange="document.getElementById('chatImageName').textContent = this.files[0] ? this.files[0].name : ''">
+        </label>
+        <span id="chatImageName" class="text-muted" style="font-size:0.8rem;"></span>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const thread = document.getElementById('chatThread');
+  if (thread) thread.scrollTop = thread.scrollHeight;
+</script>
+{% endblock %}
