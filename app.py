@@ -9,7 +9,19 @@ import secrets
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'faatn-gate-secret-key-change-in-production-2026')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(app.instance_path, 'faatn_gate.db')
+
+# Database: use Render PostgreSQL if available, otherwise local SQLite
+database_url = os.environ.get('DATABASE_URL')
+if database_url:
+    # Fix for Render (postgres:// → postgresql://)
+    if database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+else:
+    # Local development
+    os.makedirs(app.instance_path, exist_ok=True)
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(app.instance_path, 'faatn_gate.db')
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'uploads', 'avatars')
