@@ -1,0 +1,19 @@
+{
+    "sqltools.connections": [
+        {
+            "mysqlOptions": {
+                "authProtocol": "default",
+                "enableSsl": "Disabled"
+            },
+            "ssh": "Disabled",
+            "previewLimit": 1000000,
+            "server": "localhost",
+            "port": 3306,
+            "driver": "MySQL",
+            "name": "FAANT_DB",
+            "database": "faatn_db",
+            "username": "faatn_db_user",
+            "password": ""
+        }
+    ]
+}
