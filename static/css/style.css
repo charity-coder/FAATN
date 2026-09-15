@@ -534,8 +534,8 @@ h1, h2, h3, h4, h5 {
 
 .module-card:hover {
   background: var(--bg-card-hover);
-  transform: translateY(-8px);
-  box-shadow: 0 18px 35px rgba(0, 0, 0, 0.12);
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-card);
 }
 
 .module-number {

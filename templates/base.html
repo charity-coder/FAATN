@@ -140,6 +140,56 @@
         slides[i].classList.add('active');
       }, 6000);
     })();
+
+    // Subtle parallax scrolling
+    (function() {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      if (window.matchMedia('(max-width: 768px)').matches) return; // keep mobile smooth
+
+      const slideshow = document.getElementById('bgSlideshow');
+      const shapes = document.querySelector('.floating-shapes');
+      const vmcBgs = document.querySelectorAll('.vmc-card .vmc-bg');
+      const hero = document.querySelector('.hero-content');
+      let ticking = false;
+
+      function onScroll() {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          const y = window.scrollY || window.pageYOffset;
+          const max = Math.max(document.body.scrollHeight - window.innerHeight, 1);
+          const p = Math.min(y / max, 1);
+
+          // Background moves slower than page (classic parallax)
+          if (slideshow) {
+            slideshow.style.transform = 'translate3d(0, ' + (y * 0.22) + 'px, 0)';
+          }
+          // Soft shapes drift opposite direction
+          if (shapes) {
+            shapes.style.transform = 'translate3d(0, ' + (y * -0.08) + 'px, 0)';
+          }
+          // Hero content slight rise
+          if (hero && y < window.innerHeight) {
+            hero.style.transform = 'translate3d(0, ' + (y * 0.12) + 'px, 0)';
+            hero.style.opacity = String(Math.max(0.35, 1 - y / (window.innerHeight * 0.9)));
+          }
+          // Vision/Mission cards: background shifts as they enter view
+          vmcBgs.forEach((bg) => {
+            const card = bg.closest('.vmc-card');
+            if (!card) return;
+            const rect = card.getBoundingClientRect();
+            const mid = rect.top + rect.height / 2;
+            const offset = (mid - window.innerHeight / 2) * 0.06;
+            bg.style.transform = 'translate3d(0, ' + offset + 'px, 0) scale(1.08)';
+          });
+
+          ticking = false;
+        });
+      }
+
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+    })();
   </script>
   {% block extra_js %}{% endblock %}
 </body>
