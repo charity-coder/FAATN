@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>{% block title %}FAATN-GATE{% endblock %} | Gateway for Artisans & Technical Experts</title>
+
+  <meta name="description" content="{% block meta_description %}FAATN-GATE — digital gateway of the Federation of Artisans and Technicians of Nigeria. Connecting people, skills, innovation, opportunities and impact nationwide.{% endblock %}">
+  <meta name="author" content="Federation of Artisans and Technicians of Nigeria (FAATN)">
+  <meta name="theme-color" content="#0d9488">
+  <meta name="keywords" content="FAATN, artisans, technicians, Nigeria, skills, training, innovation, FAATN-GATE">
+  <link rel="canonical" href="{% block canonical_url %}{{ request.url }}{% endblock %}">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo/faatn_logo_64.png') }}">
+
+  <!-- Open Graph / Facebook / LinkedIn / WhatsApp -->
+  <meta property="og:site_name" content="FAATN-GATE">
+  <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+  <meta property="og:title" content="{% block og_title %}FAATN-GATE | Gateway for Artisans & Technical Experts{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}FAATN-GATE — digital gateway of the Federation of Artisans and Technicians of Nigeria. People → Skills → Innovation → Opportunities → Impact.{% endblock %}">
+  <meta property="og:url" content="{% block og_url %}{{ request.url }}{% endblock %}">
+  <meta property="og:image" content="{% block og_image %}{{ url_for('static', filename='images/logo/faatn_logo_512.png', _external=True) }}{% endblock %}">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
+  <meta property="og:image:alt" content="FAATN — Federation of Artisans and Technicians of Nigeria">
+  <meta property="og:locale" content="en_NG">
+
+  <!-- Twitter / X Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@faatnigeria">
+  <meta name="twitter:creator" content="@faatnigeria">
+  <meta name="twitter:title" content="{% block twitter_title %}FAATN-GATE | Gateway for Artisans & Technical Experts{% endblock %}">
+  <meta name="twitter:description" content="{% block twitter_description %}FAATN-GATE — digital gateway of the Federation of Artisans and Technicians of Nigeria. People → Skills → Innovation → Opportunities → Impact.{% endblock %}">
+  <meta name="twitter:image" content="{% block twitter_image %}{{ url_for('static', filename='images/logo/faatn_logo_512.png', _external=True) }}{% endblock %}">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block extra_css %}{% endblock %}
+
+  <!-- JSON-LD Structured Data (Schema.org) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "{{ request.url_root }}#organization",
+        "name": "Federation of Artisans and Technicians of Nigeria",
+        "alternateName": ["FAATN", "FAATN-GATE"],
+        "url": {{ request.url_root.rstrip('/')|tojson }},
+        "logo": {
+          "@type": "ImageObject",
+          "url": {{ url_for('static', filename='images/logo/faatn_logo_512.png', _external=True)|tojson }}
+        },
+        "image": {{ url_for('static', filename='images/logo/faatn_logo_512.png', _external=True)|tojson }},
+        "description": "National platform for Nigerian artisans and technicians promoting indigenous technology, skills, innovation and industrial development.",
+        "email": "faatnigeria@gmail.com",
+        "telephone": ["+2349154968109", "+2348036771117"],
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "Green Station, 5 Amiyi/Hospital Road, Umuaka",
+          "addressLocality": "Njaba",
+          "addressRegion": "Imo State",
+          "addressCountry": "NG"
+        },
+        "foundingDate": "2017",
+        "identifier": "CAC/IT/103696",
+        "sameAs": [
+          "https://facebook.com/faatnigeria",
+          "https://x.com/faatnigeria",
+          "https://instagram.com/faatnigeria",
+          "https://www.linkedin.com/company/faatnigeria",
+          "https://youtube.com/@faatnigeria",
+          "https://wa.me/2349154968109"
+        ],
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "telephone": "+2349154968109",
+          "contactType": "customer service",
+          "areaServed": "NG",
+          "availableLanguage": ["English"]
+        }
+      },
+      {
+        "@type": "WebSite",
+        "@id": "{{ request.url_root }}#website",
+        "url": {{ request.url_root.rstrip('/')|tojson }},
+        "name": "FAATN-GATE",
+        "description": "Gateway for Artisans and Technical Experts — People → Skills → Innovation → Opportunities → Impact",
+        "publisher": { "@id": "{{ request.url_root }}#organization" },
+        "inLanguage": "en-NG"
+      }
+    ]
+  }
+  </script>
+  {% block structured_data %}{% endblock %}
+
+  <style>
+    /* Critical mobile header – cannot be overridden easily */
+    @media (max-width: 1100px) {
+      .nav-links-desktop { display: none !important; }
+      .nav-desktop-only { display: none !important; }
+      .nav-toggle {
+        display: flex !important;
+        width: 44px !important;
+        height: 44px !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        gap: 5px !important;
+        padding: 10px !important;
+        background: #f1f5f9 !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 10px !important;
+        cursor: pointer !important;
+        z-index: 10001 !important;
+      }
+      .nav-toggle span {
+        display: block !important;
+        width: 100% !important;
+        height: 2.5px !important;
+        background: #0f172a !important;
+        border-radius: 2px !important;
+      }
+      .nav-toggle.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+      .nav-toggle.open span:nth-child(2) { opacity: 0; }
+      .nav-toggle.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+      #navLinks a:active { background: rgba(22,163,74,0.45) !important; }
+    }
+    @media (min-width: 1101px) {
+      #navLinks, #navOverlay { display: none !important; }
+      .nav-toggle { display: none !important; }
+    }
+  </style>
+
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  <!-- Rotating background images (6 slides) -->
+  <div class="bg-slideshow" id="bgSlideshow">
+    <div class="bg-slide active" style="background-image:url('{{ url_for('static', filename='images/backgrounds/bg1.jpg') }}')"></div>
+    <div class="bg-slide" style="background-image:url('{{ url_for('static', filename='images/backgrounds/bg2.jpg') }}')"></div>
+    <div class="bg-slide" style="background-image:url('{{ url_for('static', filename='images/backgrounds/bg3.jpg') }}')"></div>
+    <div class="bg-slide" style="background-image:url('{{ url_for('static', filename='images/backgrounds/bg4.jpg') }}')"></div>
+    <div class="bg-slide" style="background-image:url('{{ url_for('static', filename='images/backgrounds/bg5.jpg') }}')"></div>
+    <div class="bg-slide" style="background-image:url('{{ url_for('static', filename='images/backgrounds/bg6.jpg') }}')"></div>
+  </div>
+  <div class="bg-3d"></div>
+  <div class="bg-grid"></div>
+  <div class="floating-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+  </div>
+
+  {% block navbar %}
+  <nav class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="{{ url_for('index') }}" class="logo">
+        <img src="{{ url_for('static', filename='images/logo/faatn_logo_256.png') }}" alt="FAATN" class="logo-img" width="64" height="64">
+        <div class="logo-text">FAATN<span>-GATE</span></div>
+      </a>
+      <!-- Desktop navigation (visible ≥ 1101px) -->
+      <ul class="nav-links nav-links-desktop" id="navLinksDesktop">
+        <li><a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}active{% endif %}">Home</a></li>
+        <li class="nav-dropdown" id="aboutDropdownDesktop">
+          <a href="{{ url_for('about') }}" class="{% if request.endpoint == 'about' %}active{% endif %}">
+            About <span class="caret">▾</span>
+          </a>
+          <ul class="dropdown-menu">
+            <li><a href="{{ url_for('about') }}#programmes">Programmes</a></li>
+            <li><a href="{{ url_for('about') }}#partners">Partners</a></li>
+            <li><a href="{{ url_for('about') }}#innovation">Innovation</a></li>
+            <li><a href="{{ url_for('about') }}#resources">Resources</a></li>
+          </ul>
+        </li>
+        <li><a href="{{ url_for('gate') }}" class="{% if request.endpoint == 'gate' %}active{% endif %}">FAATN-GATE</a></li>
+        <li><a href="{{ url_for('marketplace') }}" class="{% if request.endpoint == 'marketplace' %}active{% endif %}">Marketplace</a></li>
+        <li><a href="{{ url_for('events_news_public') }}" class="{% if request.endpoint in ['events_news_public', 'events_news_detail'] %}active{% endif %}">Events / News</a></li>
+        <li><a href="{{ url_for('gallery_public') }}" class="{% if request.endpoint == 'gallery_public' %}active{% endif %}">Gallery</a></li>
+        <li><a href="{{ url_for('contact') }}" class="{% if request.endpoint == 'contact' %}active{% endif %}">Contact</a></li>
+      </ul>
+      <div class="nav-actions">
+        {% if current_user.is_authenticated %}
+          <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-sm nav-desktop-only">Dashboard</a>
+          <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm nav-desktop-only">Logout</a>
+        {% else %}
+          <a href="{{ url_for('login') }}" class="btn btn-outline btn-sm nav-desktop-only">Login</a>
+          <a href="{{ url_for('register') }}" class="btn btn-primary btn-sm nav-desktop-only">Register</a>
+        {% endif %}
+        <button type="button" class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Mobile menu: slides in from the right over dim overlay -->
+  <div id="navOverlay" class="nav-overlay" aria-hidden="true"></div>
+  <ul id="navLinks" class="nav-links-mobile" role="navigation" aria-label="Mobile menu">
+    <li><a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}active{% endif %}">Home</a></li>
+    <li class="nav-dropdown" id="aboutDropdownMobile">
+      <a href="{{ url_for('about') }}" class="nav-dropdown-toggle {% if request.endpoint == 'about' %}active{% endif %}" id="aboutToggleMobile" aria-expanded="false" aria-controls="aboutSubmenuMobile">
+        About <span class="caret">▾</span>
+      </a>
+      <ul class="dropdown-menu" id="aboutSubmenuMobile">
+        <li><a href="{{ url_for('about') }}#programmes">Programmes</a></li>
+        <li><a href="{{ url_for('about') }}#partners">Partners</a></li>
+        <li><a href="{{ url_for('about') }}#innovation">Innovation</a></li>
+        <li><a href="{{ url_for('about') }}#resources">Resources</a></li>
+      </ul>
+    </li>
+    <li><a href="{{ url_for('gate') }}" class="{% if request.endpoint == 'gate' %}active{% endif %}">FAATN-GATE</a></li>
+    <li><a href="{{ url_for('marketplace') }}" class="{% if request.endpoint == 'marketplace' %}active{% endif %}">Marketplace</a></li>
+    <li><a href="{{ url_for('events_news_public') }}" class="{% if request.endpoint in ['events_news_public', 'events_news_detail'] %}active{% endif %}">Events / News</a></li>
+    <li><a href="{{ url_for('gallery_public') }}" class="{% if request.endpoint == 'gallery_public' %}active{% endif %}">Gallery</a></li>
+    <li><a href="{{ url_for('contact') }}" class="{% if request.endpoint == 'contact' %}active{% endif %}">Contact</a></li>
+    <li class="nav-mobile-auth">
+      {% if current_user.is_authenticated %}
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Dashboard</a>
+        <a href="{{ url_for('logout') }}" class="btn btn-outline">Logout</a>
+      {% else %}
+        <a href="{{ url_for('login') }}" class="btn btn-outline">Login</a>
+        <a href="{{ url_for('register') }}" class="btn btn-primary">Register</a>
+      {% endif %}
+    </li>
+  </ul>
+  {% endblock %}
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div style="position:fixed;top:80px;right:1.5rem;z-index:2000;max-width:380px;">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}" style="animation: slideIn 0.4s ease;">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <main id="main-content" tabindex="-1">
+  {% block content %}{% endblock %}
+</main>
+
+  {% block footer %}
+  <footer class="footer">
+    <div class="footer-inner">
+      <p class="footer-journey"><strong>FAATN-GATE</strong> — People → Skills → Innovation → Opportunities → Impact</p>
+      <p class="footer-org">Federation of Artisans and Technicians of Nigeria (FAATN)</p>
+      <p class="footer-address">
+        Green Station, 5 Amiyi/Hospital Road, Umuaka, Njaba LGA, Imo State
+      </p>
+      <p class="footer-contact">
+        Tel: +234 915 496 8109 · +234 803 677 1117<br>
+        Email: <a href="mailto:faatnigeria@gmail.com">faatnigeria@gmail.com</a>
+      </p>
+      <div class="social-links">
+        <a href="https://wa.me/2349154968109" target="_blank" rel="noopener" title="WhatsApp" aria-label="WhatsApp">WhatsApp</a>
+        <a href="https://facebook.com/faatnigeria" target="_blank" rel="noopener" title="Facebook" aria-label="Facebook">Facebook</a>
+        <a href="https://x.com/faatnigeria" target="_blank" rel="noopener" title="X (Twitter)" aria-label="X">X</a>
+        <a href="https://instagram.com/faatnigeria" target="_blank" rel="noopener" title="Instagram" aria-label="Instagram">Instagram</a>
+        <a href="https://www.linkedin.com/company/faatnigeria" target="_blank" rel="noopener" title="LinkedIn" aria-label="LinkedIn">LinkedIn</a>
+        <a href="https://youtube.com/@faatnigeria" target="_blank" rel="noopener" title="YouTube" aria-label="YouTube">YouTube</a>
+      </div>
+      <p class="social-handles">
+        @faatnigeria · WhatsApp +234 915 496 8109
+      </p>
+      <p class="footer-legal">CAC/IT/103696 · Established 2017 · © 2026 FAATN</p>
+    </div>
+  </footer>
+  {% endblock %}
+
+  <script>
+    // Navbar scroll effect
+    window.addEventListener('scroll', () => {
+      document.getElementById('navbar')?.classList.toggle('scrolled', window.scrollY > 40);
+    });
+
+    // Mobile menu: slide from right, dim overlay, close on link / overlay / Escape
+    (function() {
+      var toggle  = document.getElementById('navToggle');
+      var panel   = document.getElementById('navLinks');
+      var overlay = document.getElementById('navOverlay');
+      if (!toggle || !panel || !overlay) return;
+
+      function openMenu() {
+        panel.classList.add('open');
+        overlay.classList.add('open');
+        toggle.classList.add('open');
+        document.body.classList.add('nav-open');
+        toggle.setAttribute('aria-expanded', 'true');
+        overlay.setAttribute('aria-hidden', 'false');
+      }
+      function closeMenu() {
+        panel.classList.remove('open');
+        overlay.classList.remove('open');
+        toggle.classList.remove('open');
+        document.body.classList.remove('nav-open');
+        toggle.setAttribute('aria-expanded', 'false');
+        overlay.setAttribute('aria-hidden', 'true');
+        // collapse About submenu when menu closes
+        var aboutLi = document.getElementById('aboutDropdownMobile');
+        if (aboutLi) aboutLi.classList.remove('open');
+        var aboutBtn = document.getElementById('aboutToggleMobile');
+        if (aboutBtn) aboutBtn.setAttribute('aria-expanded', 'false');
+      }
+      function isOpen() {
+        return panel.classList.contains('open');
+      }
+
+      toggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (isOpen()) closeMenu();
+        else openMenu();
+      });
+
+      overlay.addEventListener('click', closeMenu);
+
+      // Close when any nav link is tapped (except About toggle)
+      panel.querySelectorAll('a').forEach(function(link) {
+        link.addEventListener('click', function(e) {
+          // About parent toggle: expand/collapse submenu instead of navigating immediately
+          if (link.id === 'aboutToggleMobile') {
+            e.preventDefault();
+            var parent = document.getElementById('aboutDropdownMobile');
+            if (!parent) return;
+            var willOpen = !parent.classList.contains('open');
+            parent.classList.toggle('open', willOpen);
+            link.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+            return;
+          }
+          closeMenu();
+        });
+      });
+
+      // Escape key closes menu
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && isOpen()) closeMenu();
+      });
+    })();
+
+    // Auto-hide flash messages
+    setTimeout(() => {
+      document.querySelectorAll('.alert').forEach(el => {
+        el.style.opacity = '0';
+        el.style.transition = 'opacity 0.5s';
+        setTimeout(() => el.remove(), 500);
+      });
+    }, 4500);
+    // Background image slideshow (6 images)
+    (function() {
+      const slides = document.querySelectorAll('#bgSlideshow .bg-slide');
+      if (!slides.length) return;
+      let i = 0;
+      setInterval(() => {
+        slides[i].classList.remove('active');
+        i = (i + 1) % slides.length;
+        slides[i].classList.add('active');
+      }, 6000);
+    })();
+
+    // Subtle parallax scrolling
+    (function() {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      if (window.matchMedia('(max-width: 768px)').matches) return; // keep mobile smooth
+
+      const slideshow = document.getElementById('bgSlideshow');
+      const shapes = document.querySelector('.floating-shapes');
+      const vmcBgs = document.querySelectorAll('.vmc-card .vmc-bg');
+      const hero = document.querySelector('.hero-content');
+      let ticking = false;
+
+      function onScroll() {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          const y = window.scrollY || window.pageYOffset;
+          const max = Math.max(document.body.scrollHeight - window.innerHeight, 1);
+          const p = Math.min(y / max, 1);
+
+          // Background moves slower than page (classic parallax)
+          if (slideshow) {
+            slideshow.style.transform = 'translate3d(0, ' + (y * 0.22) + 'px, 0)';
+          }
+          // Soft shapes drift opposite direction
+          if (shapes) {
+            shapes.style.transform = 'translate3d(0, ' + (y * -0.08) + 'px, 0)';
+          }
+          // Hero content slight rise
+          if (hero && y < window.innerHeight) {
+            hero.style.transform = 'translate3d(0, ' + (y * 0.12) + 'px, 0)';
+            hero.style.opacity = String(Math.max(0.35, 1 - y / (window.innerHeight * 0.9)));
+          }
+          // Vision/Mission cards: background shifts as they enter view
+          vmcBgs.forEach((bg) => {
+            const card = bg.closest('.vmc-card');
+            if (!card) return;
+            const rect = card.getBoundingClientRect();
+            const mid = rect.top + rect.height / 2;
+            const offset = (mid - window.innerHeight / 2) * 0.06;
+            bg.style.transform = 'translate3d(0, ' + offset + 'px, 0) scale(1.08)';
+          });
+
+          ticking = false;
+        });
+      }
+
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+    })();
+  </script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

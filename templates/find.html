@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}Find an Artisan / Technician{% endblock %}
+{% block meta_description %}Search FAATN-Registered and FAATN-Verified artisans and technicians by occupation, location and specialisation.{% endblock %}
+
+{% block content %}
+<section class="section section-artisans" style="padding-top:7.5rem;">
+  <div class="container" style="max-width:960px;">
+    <div class="section-header">
+      <p class="section-kicker">FAATN-GATE</p>
+      <h2>Find an <span class="gradient-text">Artisan / Technician</span></h2>
+      <p>Search by occupation, location and specialisation. Results show FAATN status for credibility.</p>
+    </div>
+
+    <form method="GET" action="{{ url_for('find_artisans') }}" class="find-form">
+      <div class="find-form-grid">
+        <div class="form-group">
+          <label for="role">Looking for</label>
+          <select name="role" id="role" class="form-control">
+            <option value="">Artisan or Technician</option>
+            <option value="artisan" {% if selected_role == 'artisan' or role == 'artisan' %}selected{% endif %}>Artisan</option>
+            <option value="technician" {% if selected_role == 'technician' or role == 'technician' %}selected{% endif %}>Technician</option>
+            <option value="engineer" {% if selected_role == 'engineer' or role == 'engineer' %}selected{% endif %}>Engineer / Technical Professional</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="occupation">Occupation</label>
+          <select name="occupation" id="occupation" class="form-control">
+            <option value="">All occupations</option>
+            {% for occ in occupations %}
+            <option value="{{ occ }}" {% if selected_occ == occ or occupation == occ %}selected{% endif %}>{{ occ }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="state">State</label>
+          <select name="state" id="state" class="form-control">
+            <option value="">All states</option>
+            {% for st in states %}
+            <option value="{{ st }}" {% if selected_state == st or state == st %}selected{% endif %}>{{ st }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="lga">LGA</label>
+          <input type="text" name="lga" id="lga" class="form-control" value="{{ lga or '' }}" placeholder="e.g. Njaba">
+        </div>
+        <div class="form-group">
+          <label for="town">Town / City</label>
+          <input type="text" name="town" id="town" class="form-control" value="{{ town or '' }}" placeholder="e.g. Umuaka">
+        </div>
+        <div class="form-group">
+          <label for="specialty">Specialisation</label>
+          <input type="text" name="specialty" id="specialty" class="form-control" value="{{ specialty or '' }}" placeholder="e.g. Solar Pump — Installation & Maintenance">
+        </div>
+        <div class="form-group">
+          <label for="listing">FAATN status</label>
+          <select name="listing" id="listing" class="form-control">
+            <option value="">Registered + Verified + Partner</option>
+            {% for key, label in listing_categories.items() %}
+            <option value="{{ key }}" {% if listing == key %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="find-form-actions">
+        <button type="submit" class="btn btn-primary">Search</button>
+        <a href="{{ url_for('find_artisans') }}" class="btn btn-outline">Clear</a>
+      </div>
+    </form>
+
+    {% if searched %}
+    <p class="find-count">{{ results|length }} result{{ 's' if results|length != 1 else '' }}</p>
+    {% endif %}
+
+    {% if results %}
+    <div class="find-map-panel">
+      <h3 style="font-size:1.05rem;margin-bottom:0.5rem;">Map view</h3>
+      <p class="text-muted" style="font-size:0.9rem;margin-bottom:0.75rem;">FAATN holds the master database. Open Google Maps for directions to each listing.</p>
+      <ul class="find-map-list">
+        {% for m in results %}
+        <li>
+          <strong>{{ m.full_name }}</strong> — {{ m.occupation or '' }} · {{ m.location_state or '' }}
+          <a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&amp;query={{ ((m.location_community or '') ~ ' ' ~ (m.location_lga or '') ~ ' ' ~ (m.location_state or '') ~ ' Nigeria')|urlencode }}">Directions</a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    <div class="find-results">
+      {% for m in results %}
+      <article class="find-card">
+        <div class="find-card-top">
+          {% if m.profile_pic %}
+          <img src="{{ url_for('static', filename='uploads/avatars/' + m.profile_pic) }}" alt="" class="find-avatar">
+          {% else %}
+          <div class="find-avatar find-avatar-fallback">{{ m.full_name[0] }}</div>
+          {% endif %}
+          <div>
+            <h3 class="find-name">{{ m.full_name }}</h3>
+            <span class="listing-badge {{ m.badge_class() }}">{{ m.listing_label }}</span>
+          </div>
+        </div>
+        <dl class="find-meta">
+          <div><dt>Occupation</dt><dd>{{ m.occupation or '—' }}</dd></div>
+          <div><dt>Specialisation</dt><dd>{{ m.specialty or m.skills or '—' }}</dd></div>
+          <div><dt>Location</dt><dd>
+            {% if m.location_community %}{{ m.location_community }}{% endif %}
+            {% if m.location_lga %}{% if m.location_community %}, {% endif %}{{ m.location_lga }}{% endif %}
+            {% if m.location_state %}{% if m.location_lga or m.location_community %}, {% endif %}{{ m.location_state }}{% endif %}
+            {% if not m.location_state and not m.location_lga and not m.location_community %}—{% endif %}
+          </dd></div>
+          <div><dt>Availability</dt><dd>{{ m.availability or '—' }}</dd></div>
+          <div><dt>Telephone</dt><dd>{% if m.phone %}<a href="tel:{{ m.phone }}">{{ m.phone }}</a>{% else %}—{% endif %}</dd></div>
+        </dl>
+        <div class="find-actions">
+          {% if m.phone %}
+          <a class="btn btn-primary btn-sm" href="https://wa.me/{{ m.phone | replace('+', '') | replace(' ', '') | replace('-', '') }}?text=Hello%20{{ m.full_name | urlencode }}%2C%20I%20found%20you%20on%20FAATN-GATE." target="_blank" rel="noopener">WhatsApp</a>
+          <a class="btn btn-outline btn-sm" href="tel:{{ m.phone }}">Call</a>
+          {% endif %}
+          {% if m.location_state or m.location_lga or m.location_community %}
+          <a class="btn btn-outline btn-sm" target="_blank" rel="noopener"
+             href="https://www.google.com/maps/search/?api=1&amp;query={{ ((m.location_community or '') ~ ' ' ~ (m.location_lga or '') ~ ' ' ~ (m.location_state or '') ~ ' Nigeria')|urlencode }}">View Location</a>
+          {% endif %}
+          <a class="btn btn-outline btn-sm" href="{{ url_for('public_profile', user_id=m.id) }}">View profile</a>
+          <a class="btn btn-outline btn-sm" href="{{ url_for('need_help') }}">Request Service</a>
+          {% if current_user.is_authenticated %}
+          <a class="btn btn-outline btn-sm" href="{{ url_for('chat', user_id=m.id) }}">Message</a>
+          {% endif %}
+        </div>
+      </article>
+      {% else %}
+        {% if searched %}
+        <p class="text-muted text-center">No FAATN-listed members matched. Try a wider location or occupation.</p>
+        {% else %}
+        <p class="text-muted text-center">Choose occupation and location, then search. Only FAATN-Registered, Verified and Partner listings appear by default.</p>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

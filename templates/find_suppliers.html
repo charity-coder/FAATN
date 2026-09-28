@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Find Parts & Suppliers{% endblock %}
+{% block content %}
+<section class="section" style="padding-top:7.5rem;">
+  <div class="container" style="max-width:960px;">
+    <div class="section-header">
+      <p class="section-kicker">FAATN-GATE</p>
+      <h2>Find Parts &amp; <span class="gradient-text">Suppliers</span></h2>
+      <p>Search participating suppliers. FAATN holds the master database — maps are for location only.</p>
+    </div>
+    <form method="GET" class="find-form">
+      <div class="find-form-grid">
+        <div class="form-group">
+          <label>Item / keyword</label>
+          <input type="text" name="q" class="form-control" value="{{ q }}" placeholder="e.g. 5HP solar pump">
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select name="category" class="form-control">
+            <option value="">All categories</option>
+            {% for c in categories %}
+            <option value="{{ c }}" {% if category == c %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>State</label>
+          <select name="state" class="form-control">
+            <option value="">All states</option>
+            {% for st in states %}<option value="{{ st }}" {% if state == st %}selected{% endif %}>{{ st }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Town / City</label>
+          <input type="text" name="town" class="form-control" value="{{ town }}" placeholder="e.g. Port Harcourt">
+        </div>
+      </div>
+      <div class="find-form-actions">
+        <button type="submit" class="btn btn-primary">Search suppliers</button>
+        <a href="{{ url_for('register') }}?role=supplier" class="btn btn-outline">Register as Supplier</a>
+      </div>
+    </form>
+    <div class="find-results">
+      {% for m in results %}
+      <article class="find-card">
+        <h3 class="find-name">{{ m.business_name or m.full_name }}</h3>
+        <span class="listing-badge {{ m.badge_class() }}">{{ m.listing_label }}</span>
+        <dl class="find-meta">
+          <div><dt>Category</dt><dd>{{ m.supplier_category or '—' }}</dd></div>
+          <div><dt>Products</dt><dd>{{ m.products_supplied or m.skills or '—' }}</dd></div>
+          <div><dt>Location</dt><dd>{{ m.location_community or '' }}{% if m.location_state %}, {{ m.location_state }}{% endif %}</dd></div>
+          <div><dt>Hours</dt><dd>{{ m.opening_hours or '—' }}</dd></div>
+          <div><dt>Telephone</dt><dd>{% if m.phone %}<a href="tel:{{ m.phone }}">{{ m.phone }}</a>{% else %}—{% endif %}</dd></div>
+        </dl>
+        <div class="find-actions">
+          {% if m.whatsapp or m.phone %}
+          <a class="btn btn-primary btn-sm" target="_blank" rel="noopener"
+             href="https://wa.me/{{ (m.whatsapp or m.phone)|replace('+','')|replace(' ','') }}?text=Hello%2C%20I%20found%20you%20on%20FAATN-GATE.">WhatsApp</a>
+          {% endif %}
+          {% if m.phone %}<a class="btn btn-outline btn-sm" href="tel:{{ m.phone }}">Call</a>{% endif %}
+          <a class="btn btn-outline btn-sm" href="{{ url_for('public_profile', user_id=m.id) }}">View profile</a>
+          <a class="btn btn-outline btn-sm" target="_blank" rel="noopener"
+             href="https://www.google.com/maps/search/?api=1&amp;query={{ ((m.location_community or '') ~ ' ' ~ (m.location_state or '') ~ ' Nigeria')|urlencode }}">Map</a>
+        </div>
+      </article>
+      {% else %}
+      <p class="text-muted text-center">{% if searched %}No suppliers matched.{% else %}Search by product keyword, category and location.{% endif %}</p>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

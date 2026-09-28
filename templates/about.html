@@ -1,0 +1,450 @@
+{% extends "base.html" %}
+{% block title %}About FAATN{% endblock %}
+{% block meta_description %}About the Federation of Artisans and Technicians of Nigeria (FAATN) — vision, mission, leadership and national commitment to indigenous technology.{% endblock %}
+{% block og_title %}About FAATN | Federation of Artisans and Technicians of Nigeria{% endblock %}
+{% block og_description %}Learn about FAATN’s vision, mission, leadership team and commitment to Nigerian artisans and technicians.{% endblock %}
+{% block twitter_title %}About FAATN | Federation of Artisans and Technicians of Nigeria{% endblock %}
+{% block twitter_description %}Learn about FAATN’s vision, mission, leadership team and commitment to Nigerian artisans and technicians.{% endblock %}
+
+{% block structured_data %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "AboutPage",
+  "name": "About FAATN",
+  "description": "About the Federation of Artisans and Technicians of Nigeria — vision, mission, leadership and national commitment.",
+  "url": {{ request.url|tojson }},
+  "isPartOf": { "@id": "{{ request.url_root }}#website" },
+  "about": { "@id": "{{ request.url_root }}#organization" },
+  "mainEntity": {
+    "@type": "NGO",
+    "name": "Federation of Artisans and Technicians of Nigeria",
+    "legalName": "Federation of Artisans and Technicians of Nigeria",
+    "alternateName": "FAATN",
+    "url": {{ request.url_root.rstrip('/')|tojson }},
+    "foundingDate": "2017",
+    "identifier": "CAC/IT/103696",
+    "email": "faatnigeria@gmail.com",
+    "telephone": "+2349154968109",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Green Station, 5 Amiyi/Hospital Road, Umuaka",
+      "addressLocality": "Njaba",
+      "addressRegion": "Imo",
+      "addressCountry": "NG"
+    }
+  }
+}
+</script>
+{% endblock %}
+
+
+{% block content %}
+<style>
+.msg-chairman, .msg-secretary, .msg-chairman p, .msg-secretary p,
+.msg-chairman h3, .msg-secretary h3, .msg-headline, .msg-sign,
+.msg-person-name, .msg-person-title, .msg-role, .msg-handle {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+.msg-headline { font-weight: 800 !important; font-size: 1.35rem !important; }
+.msg-chairman p, .msg-secretary p { font-weight: 600 !important; }
+.msg-person-name, .msg-sign { font-weight: 800 !important; }
+</style>
+
+<section class="section" style="padding-top:8rem;">
+  <div class="container">
+
+    <!-- Header -->
+    <div class="section-header">
+      <h2>About <span class="gradient-text">FAATN</span></h2>
+      <p>Federation of Artisans and Technicians of Nigeria</p>
+    </div>
+
+    <!-- Who We Are -->
+    <div class="dash-card mb-3" style="max-width:900px;margin:0 auto 2.5rem;">
+      <div class="dash-card-header">
+        <h3>Who We Are</h3>
+      </div>
+      <div class="dash-card-body" style="line-height:1.75;">
+        <p style="margin-bottom:1rem;">
+          The <strong>Federation of Artisans and Technicians of Nigeria (FAATN)</strong> is a nationally registered non-governmental and non-profit organisation established in <strong>2017</strong> and incorporated under <strong>CAC Registration No. CAC/IT/103696</strong>.
+        </p>
+        <p style="margin-bottom:1rem;">
+          FAATN was founded to provide a national platform for artisans and technicians, promote indigenous technology development, strengthen technical skills, encourage innovation, and facilitate collaboration among artisans, technicians, tertiary institutions, industries, government agencies, and development partners.
+        </p>
+        <p>
+          The Federation is committed to transforming Nigeria’s artisan and technical subsector into a major contributor to industrial development, employment generation, technology transfer, economic diversification, and national prosperity.
+        </p>
+      </div>
+    </div>
+
+    <!-- Vision / Mission / Commitment -->
+    <div class="modules-grid" style="margin-bottom:3rem;">
+      <div class="module-card">
+        <div class="module-number">01</div>
+        <h3 style="margin-bottom:0.75rem;">🎯 Vision</h3>
+        <p class="text-muted">To become the foremost organisation promoting innovation, indigenous technology, and sustainable development through Nigerian artisans and technicians.</p>
+      </div>
+      <div class="module-card">
+        <div class="module-number">02</div>
+        <h3 style="margin-bottom:0.75rem;">🚀 Mission</h3>
+        <p class="text-muted">To mobilise, organise and empower artisans and technicians through training, innovation, strategic partnerships, technology transfer, renewable energy development, artificial intelligence, business ethics, research collaboration, and access to modern tools and opportunities.</p>
+      </div>
+      <div class="module-card">
+        <div class="module-number">03</div>
+        <h3 style="margin-bottom:0.75rem;">🇳🇬 Our Commitment</h3>
+        <p class="text-muted">Supporting the Federal Government’s industrialisation agenda by promoting innovation, strengthening technical capacity, encouraging local manufacturing, creating employment opportunities, and positioning Nigerian artisans and technicians as key drivers of national development and global competitiveness.</p>
+      </div>
+    </div>
+
+    <!-- Core Objectives / Programmes -->
+    <div class="section-header" id="programmes" style="margin-bottom:2rem; scroll-margin-top:6.5rem;">
+      <p class="section-kicker">Our Programmes</p>
+      <h2>Core <span class="gradient-text">Objectives</span></h2>
+      <p>The programme areas through which FAATN delivers on its mission for artisans and technicians nationwide</p>
+    </div>
+    <div class="modules-grid" style="margin-bottom:3.5rem;">
+      <div class="module-card">
+        <h3>Indigenous Technology</h3>
+        <p class="text-muted mt-1">Promote indigenous technologies and local innovation.</p>
+      </div>
+      <div class="module-card">
+        <h3>Collaboration</h3>
+        <p class="text-muted mt-1">Encourage collaboration between artisans, technicians, research institutions, industries and government.</p>
+      </div>
+      <div class="module-card">
+        <h3>Technology Transfer</h3>
+        <p class="text-muted mt-1">Facilitate technology transfer and commercialisation of innovations.</p>
+      </div>
+      <div class="module-card">
+        <h3>Renewable Energy</h3>
+        <p class="text-muted mt-1">Promote renewable energy solutions for productive enterprises.</p>
+      </div>
+      <div class="module-card">
+        <h3>Artificial Intelligence</h3>
+        <p class="text-muted mt-1">Encourage the adoption of AI and emerging technologies within the artisan sector.</p>
+      </div>
+      <div class="module-card">
+        <h3>Local Manufacturing</h3>
+        <p class="text-muted mt-1">Support fabrication, manufacturing and local content development.</p>
+      </div>
+      <div class="module-card">
+        <h3>Skills & Certification</h3>
+        <p class="text-muted mt-1">Improve technical skills through continuous training and certification.</p>
+      </div>
+      <div class="module-card">
+        <h3>Business Ethics</h3>
+        <p class="text-muted mt-1">Promote internationally acceptable business ethics.</p>
+      </div>
+      <div class="module-card">
+        <h3>Innovation Fairs</h3>
+        <p class="text-muted mt-1">Organise exhibitions, competitions and innovation fairs.</p>
+      </div>
+      <div class="module-card">
+        <h3>National Database</h3>
+        <p class="text-muted mt-1">Develop a comprehensive national database of artisans and technicians for planning and policy development.</p>
+      </div>
+      <div class="module-card">
+        <h3>Nationwide Cooperation</h3>
+        <p class="text-muted mt-1">Strengthen communication and cooperation among artisan associations nationwide.</p>
+      </div>
+    </div>
+
+    <!-- Strategic Focus / Innovation -->
+    <div class="section-header" id="innovation" style="margin-bottom:2rem; scroll-margin-top:6.5rem;">
+      <p class="section-kicker">Innovation</p>
+      <h2>Strategic Areas of <span class="gradient-text">Focus</span></h2>
+      <p>Where FAATN concentrates its innovation, technology and capacity-building efforts</p>
+    </div>
+    <div class="gate-grid" style="margin-bottom:3.5rem;">
+      <div class="gate-card" style="cursor:default;">
+        <div class="gate-icon">☀️</div>
+        <h3>Renewable Energy</h3>
+        <p>Technologies for productive enterprises</p>
+      </div>
+      <div class="gate-card" style="cursor:default;">
+        <div class="gate-icon">🤖</div>
+        <h3>Artificial Intelligence</h3>
+        <p>AI applications in the artisan sector</p>
+      </div>
+      <div class="gate-card" style="cursor:default;">
+        <div class="gate-icon">🛠️</div>
+        <h3>Indigenous Technology</h3>
+        <p>Local innovation & development</p>
+      </div>
+      <div class="gate-card" style="cursor:default;">
+        <div class="gate-icon">📚</div>
+        <h3>Skills Development</h3>
+        <p>Continuous training & certification</p>
+      </div>
+      <div class="gate-card" style="cursor:default;">
+        <div class="gate-icon">🏭</div>
+        <h3>Fabrication & Manufacturing</h3>
+        <p>Local content development</p>
+      </div>
+      <div class="gate-card" style="cursor:default;">
+        <div class="gate-icon">🏆</div>
+        <h3>Innovation Competitions</h3>
+        <p>Exhibitions & innovation fairs</p>
+      </div>
+      <div class="gate-card" style="cursor:default;">
+        <div class="gate-icon">🔬</div>
+        <h3>Research & Development</h3>
+        <p>Applied R&D collaboration</p>
+      </div>
+      <div class="gate-card" style="cursor:default;">
+        <div class="gate-icon">🚀</div>
+        <h3>Commercialisation</h3>
+        <p>Technology transfer to market</p>
+      </div>
+      <div class="gate-card" style="cursor:default;">
+        <div class="gate-icon">👨‍🎓</div>
+        <h3>Youth Employment</h3>
+        <p>Through technical skills</p>
+      </div>
+      <div class="gate-card" style="cursor:default;">
+        <div class="gate-icon">🌍</div>
+        <h3>Environmental Sustainability</h3>
+        <p>Green & sustainable practices</p>
+      </div>
+    </div>
+
+    <!-- Strategic Collaborations / Partners -->
+    <div class="section-header" id="partners" style="margin-bottom:2rem; scroll-margin-top:6.5rem;">
+      <p class="section-kicker">Our Partners</p>
+      <h2>Strategic <span class="gradient-text">Collaborations</span></h2>
+      <p>FAATN is actively building partnerships with key national institutions</p>
+    </div>
+    <div class="modules-grid" style="margin-bottom:3.5rem;">
+      <div class="module-card">
+        <h3>Federal Ministry of Innovation, Science and Technology</h3>
+      </div>
+      <div class="module-card">
+        <h3>Nigerian Society of Engineers (NSE)</h3>
+      </div>
+      <div class="module-card">
+        <h3>National Board for Technical Education (NBTE)</h3>
+      </div>
+      <div class="module-card">
+        <h3>Association of Nigerian Scientists and Technologists (ASNAT)</h3>
+      </div>
+      <div class="module-card">
+        <h3>Universities, Polytechnics & Research Institutes</h3>
+      </div>
+      <div class="module-card">
+        <h3>Development Partners</h3>
+      </div>
+    </div>
+
+    <!-- Leadership Messages -->
+    <div class="section-band section-leadership-messages" id="leadership-messages">
+      <div class="section-header" style="margin-bottom:1.5rem;">
+        <p class="section-kicker">Leadership Messages</p>
+        <h2>Voices of <span class="gradient-text">FAATN</span></h2>
+        <p>Institutional direction from the Chairman and the Secretary</p>
+      </div>
+
+      <div class="msg-grid">
+        <article class="msg-chairman">
+          <div class="msg-profile">
+            <img src="{{ url_for('static', filename='images/leadership/chairman.jpg') }}" alt="Professor Mazi Ojiaku, Chairman of FAATN" class="msg-photo-lg">
+            <div class="msg-profile-meta">
+              <p class="msg-role">Message from the Chairman</p>
+              <h3 class="msg-person-name">Professor Mazi Ojiaku</h3>
+              <p class="msg-person-title">Chairman, Federation of Artisans and Technicians of Nigeria (FAATN)</p>
+              <div class="msg-social">
+                <a href="https://wa.me/2349154968109" target="_blank" rel="noopener">WhatsApp</a>
+                <a href="https://facebook.com/faatnigeria" target="_blank" rel="noopener">Facebook</a>
+                <a href="https://x.com/faatnigeria" target="_blank" rel="noopener">X</a>
+                <a href="https://instagram.com/faatnigeria" target="_blank" rel="noopener">Instagram</a>
+                <a href="mailto:faatnigeria@gmail.com">Email</a>
+              </div>
+              <p class="msg-handle">@faatnigeria</p>
+            </div>
+          </div>
+          <h3 class="msg-headline" style="color:#fff !important;font-weight:800 !important;font-size:1.35rem !important;">A national platform for skill, innovation and prosperity</h3>
+          <p>
+            The Federation of Artisans and Technicians of Nigeria was founded on a simple conviction:
+            that the men and women who build, fabricate, install, repair and innovate with their hands
+            are indispensable to Nigeria’s industrial future. For too long, this community has operated
+            without a unified national platform. FAATN exists to change that.
+          </p>
+          <p>
+            Our vision is to place indigenous technical capacity at the centre of industrialisation,
+            employment generation, technology transfer and sustainable development. Through FAATN-GATE,
+            we are connecting <strong>People → Skills → Innovation → Opportunities → Impact</strong>
+            in partnership with tertiary institutions, industry, government and development partners.
+          </p>
+          <p>
+            I call on artisans, technicians, engineers, policymakers and investors to join us.
+            Together, we will strengthen Nigeria’s technical backbone and open pathways to dignity,
+            enterprise and national prosperity.
+          </p>
+          <p class="msg-sign">Professor Mazi Ojiaku<br><span>Chairman, FAATN</span></p>
+        </article>
+
+        <article class="msg-secretary">
+          <div class="msg-profile">
+            <img src="{{ url_for('static', filename='images/leadership/secretary.jpg') }}" alt="Barrister Ajoku Philip Ogadinma, Secretary of FAATN" class="msg-photo-lg">
+            <div class="msg-profile-meta">
+              <p class="msg-role">Message from the Secretary</p>
+              <h3 class="msg-person-name">Barrister Ajoku Philip Ogadinma</h3>
+              <p class="msg-person-title">Secretary, Federation of Artisans and Technicians of Nigeria (FAATN)</p>
+              <div class="msg-social">
+                <a href="https://wa.me/2349154968109" target="_blank" rel="noopener">WhatsApp</a>
+                <a href="https://facebook.com/faatnigeria" target="_blank" rel="noopener">Facebook</a>
+                <a href="https://x.com/faatnigeria" target="_blank" rel="noopener">X</a>
+                <a href="https://linkedin.com/company/faatnigeria" target="_blank" rel="noopener">LinkedIn</a>
+                <a href="mailto:faatnigeria@gmail.com">Email</a>
+              </div>
+              <p class="msg-handle">@faatnigeria · faatnigeria@gmail.com</p>
+            </div>
+          </div>
+          <h3 class="msg-headline" style="color:#fff !important;font-weight:800 !important;font-size:1.35rem !important;">Institutional commitment, programmes and partnership</h3>
+          <p>
+            FAATN is not only a vision; it is an organised institution. We are committed to clear programmes
+            in skills development, training and certification pathways, innovation support, renewable energy readiness,
+            research collaboration and market linkage—delivered with transparency, accountability and respect
+            for every stakeholder who engages with us.
+          </p>
+          <p>
+            Our doors are open to artisans and technicians seeking growth; to engineers and institutions
+            offering technical partnership; and to government, industry and development partners who share
+            the goal of a stronger Nigerian technical subsector. FAATN-GATE provides a practical entry point
+            for registration, collaboration and service.
+          </p>
+          <p>
+            We invite you to work with us—formally, productively and in the national interest.
+          </p>
+          <p class="msg-sign">Barrister Ajoku Philip Ogadinma<br><span>Secretary, FAATN</span></p>
+        </article>
+      </div>
+    </div>
+
+    <!-- Leadership profiles — light green/white, professional photos + short profiles -->
+    <section class="section section-leadership-team-band" id="leadership">
+      <div class="section-header" style="margin-bottom:1.75rem;">
+        <p class="section-kicker">Our people</p>
+        <h2>National <span class="gradient-text">Leadership</span></h2>
+        <p>Professional officers guiding FAATN’s national platform for artisans and technicians</p>
+      </div>
+      <div class="leadership-grid leadership-grid-profiles">
+        <article class="leader-card leader-card-profile">
+          <img src="{{ url_for('static', filename='images/leadership/chairman.jpg') }}" alt="Professor Mazi Ojiaku" class="leader-photo">
+          <h3 class="leader-role">Chairman</h3>
+          <p class="name">Professor Mazi Ojiaku</p>
+          <p class="leader-bio">Provides strategic direction for FAATN’s national vision—advancing indigenous technology, skills and industrial development across Nigeria.</p>
+        </article>
+        <article class="leader-card leader-card-profile">
+          <img src="{{ url_for('static', filename='images/leadership/secretary.jpg') }}" alt="Barrister Ajoku Philip Ogadinma" class="leader-photo">
+          <h3 class="leader-role">Secretary</h3>
+          <p class="name">Barrister Ajoku Philip Ogadinma</p>
+          <p class="leader-bio">Oversees institutional coordination, programmes, partnerships and accountability for the Federation’s day-to-day organisational life.</p>
+        </article>
+        <article class="leader-card leader-card-profile">
+          <img src="{{ url_for('static', filename='images/leadership/resource.jpg') }}" alt="Professor Mrs. Edna Matthews-Njoku" class="leader-photo">
+          <h3 class="leader-role">Director, Resource Mobilisation</h3>
+          <p class="name">Professor Mrs. Edna Matthews-Njoku</p>
+          <p class="leader-bio">Leads mobilisation of partnerships, funding pathways and resources that sustain FAATN programmes and national outreach.</p>
+        </article>
+        <article class="leader-card leader-card-profile">
+          <img src="{{ url_for('static', filename='images/leadership/media.jpg') }}" alt="Hon. Louis Duru" class="leader-photo">
+          <h3 class="leader-role">Director, Media Communications</h3>
+          <p class="name">Hon. Louis Duru</p>
+          <p class="leader-bio">Guides FAATN’s public communication, visibility and stakeholder engagement across media and institutional channels.</p>
+        </article>
+        <article class="leader-card leader-card-profile">
+          <img src="{{ url_for('static', filename='images/leadership/training.jpg') }}" alt="Engr. Uche Ihugba" class="leader-photo">
+          <h3 class="leader-role">Director, Artisans Training</h3>
+          <p class="name">Engr. Uche Ihugba</p>
+          <p class="leader-bio">Champions technical skills development, training pathways and capacity-building for artisans and technicians nationwide.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- Zonal Coordinators -->
+    <section class="section section-leadership-team-band" id="zonal-coordinators">
+      <div class="section-header" style="margin-bottom:1.5rem;">
+        <p class="section-kicker">Nationwide</p>
+        <h2 style="font-size:1.5rem;">National Zonal Coordinators</h2>
+        <p>Regional leadership connecting FAATN members across the six geopolitical zones</p>
+      </div>
+      <div class="leadership-grid leadership-grid-profiles">
+        <article class="leader-card leader-card-profile">
+          <img src="{{ url_for('static', filename='images/leadership/ne.jpg') }}" alt="Dr. Ibrahim Yakubu" class="leader-photo">
+          <h3 class="leader-role">North East</h3>
+          <p class="name">Dr. Ibrahim Yakubu</p>
+          <p class="leader-bio">Coordinates FAATN engagement and member support across the North East zone.</p>
+        </article>
+        <article class="leader-card leader-card-profile">
+          <img src="{{ url_for('static', filename='images/leadership/nc.jpg') }}" alt="Alhaji Dr. Bello Dogondaji" class="leader-photo">
+          <h3 class="leader-role">North Central</h3>
+          <p class="name">Alhaji Dr. Bello Dogondaji</p>
+          <p class="leader-bio">Coordinates FAATN engagement and member support across the North Central zone.</p>
+        </article>
+        <article class="leader-card leader-card-profile">
+          <img src="{{ url_for('static', filename='images/leadership/nw.jpg') }}" alt="Alhaji Dr. N. Munzali" class="leader-photo">
+          <h3 class="leader-role">North West</h3>
+          <p class="name">Alhaji Dr. N. Munzali</p>
+          <p class="leader-bio">Coordinates FAATN engagement and member support across the North West zone.</p>
+        </article>
+        <article class="leader-card leader-card-profile">
+          <img src="{{ url_for('static', filename='images/leadership/se.jpg') }}" alt="Dr. Alex Duru" class="leader-photo">
+          <h3 class="leader-role">South East</h3>
+          <p class="name">Dr. Alex Duru</p>
+          <p class="leader-bio">Coordinates FAATN engagement and member support across the South East zone.</p>
+        </article>
+        <article class="leader-card leader-card-profile">
+          <img src="{{ url_for('static', filename='images/leadership/ss.jpg') }}" alt="Dr. Ufonmbuk Ibanga" class="leader-photo">
+          <h3 class="leader-role">South South</h3>
+          <p class="name">Dr. Ufonmbuk Ibanga</p>
+          <p class="leader-bio">Coordinates FAATN engagement and member support across the South South zone.</p>
+        </article>
+        <article class="leader-card leader-card-profile">
+          <img src="{{ url_for('static', filename='images/leadership/sw.jpg') }}" alt="Adeboyin Ademola" class="leader-photo">
+          <h3 class="leader-role">South West</h3>
+          <p class="name">Adeboyin Ademola</p>
+          <p class="leader-bio">Coordinates FAATN engagement and member support across the South West zone.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- Contact & Office -->
+    <div class="section-header" style="margin-bottom:2rem;">
+      <h2>Registered Office & <span class="gradient-text">Contact</span></h2>
+    </div>
+    <div class="dash-grid" style="max-width:900px;margin:0 auto;">
+      <div class="dash-card">
+        <div class="dash-card-header"><h3>📍 Registered Office</h3></div>
+        <div class="dash-card-body" style="line-height:1.8;">
+          <p><strong>Green Station</strong></p>
+          <p>5 Amiyi/Hospital Road,</p>
+          <p>Umuaka, Njaba Local Government Area,</p>
+          <p>Imo State, Nigeria.</p>
+        </div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-card-header"><h3>📞 Contact Information</h3></div>
+        <div class="dash-card-body" style="line-height:1.9;">
+          <p><strong>Telephone:</strong><br>+234 915 496 8109<br>+234 803 677 1117</p>
+          <p style="margin-top:0.8rem;"><strong>Email:</strong><br>faatnigeria@gmail.com</p>
+          <p style="margin-top:0.8rem;"><strong>Bankers:</strong><br>Zenith Bank Plc</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resources -->
+    <div id="resources" style="scroll-margin-top:6.5rem;"></div>
+    <div style="text-align:center;margin-top:4rem;padding:2rem;background:var(--glass);border-radius:var(--radius);border:1px solid var(--glass-border);max-width:700px;margin-left:auto;margin-right:auto;">
+      <p class="section-kicker">Resources</p>
+      <h3 style="margin-bottom:0.75rem;">FAATN-GATE Platform</h3>
+      <p class="text-muted" style="margin-bottom:1.25rem;">
+        FAATN-GATE is the digital gateway that operationalises FAATN’s mission — connecting artisans and technicians to skills, innovation, opportunities and impact nationwide.
+      </p>
+      <a href="{{ url_for('gate') }}" class="btn btn-primary">Enter the GATE →</a>
+    </div>
+
+  </div>
+</section>
+{% endblock %}

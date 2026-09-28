@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Events / News{% endblock %}
+{% block meta_description %}Official FAATN events, programmes and news from the Federation of Artisans and Technicians of Nigeria.{% endblock %}
+{% block content %}
+<section class="section" style="padding-top:7rem;">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-kicker">FAATN updates</p>
+      <h2>Events / <span class="gradient-text">News</span></h2>
+      <p>Official programmes, announcements and stories from FAATN.</p>
+    </div>
+
+    {% if can_post %}
+    <div class="dash-card" style="max-width:720px;margin:0 auto 2.5rem;background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:1.5rem;">
+      <h3 style="margin-bottom:0.75rem;color:#0f172a;">Publish Events / News (Official publisher only)</h3>
+      <p class="text-muted" style="font-size:0.9rem;margin-bottom:1rem;">Write up to <strong>{{ max_words }} words</strong> and attach one image.</p>
+      <form method="POST" enctype="multipart/form-data" id="newsFormPublic">
+        <div class="form-group">
+          <label>Type</label>
+          <select name="category" class="form-control">
+            <option value="event">Event</option>
+            <option value="news">News</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Title *</label>
+          <input type="text" name="title" class="form-control" required maxlength="200" placeholder="Headline">
+        </div>
+        <div class="form-group">
+          <label>Full write-up (max {{ max_words }} words)</label>
+          <textarea name="description" id="newsBodyPublic" class="form-control" rows="12" placeholder="Write the full story or event details…"></textarea>
+          <p class="text-muted" style="font-size:0.8rem;margin-top:0.35rem;"><span id="wordCountPublic">0</span> / {{ max_words }} words</p>
+        </div>
+        <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div class="form-group">
+            <label>Date (optional)</label>
+            <input type="date" name="event_date" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>Time (optional)</label>
+            <input type="text" name="event_time" class="form-control" placeholder="e.g. 10:00 AM">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Location (optional)</label>
+          <input type="text" name="location" class="form-control" placeholder="Venue or Online">
+        </div>
+        <div class="form-group">
+          <label>Image</label>
+          <input type="file" name="image" class="form-control" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp">
+        </div>
+        <button type="submit" class="btn btn-primary">Publish</button>
+      </form>
+    </div>
+    <script>
+    (function(){
+      const ta = document.getElementById('newsBodyPublic');
+      const wc = document.getElementById('wordCountPublic');
+      const max = {{ max_words }};
+      if (!ta || !wc) return;
+      function count() {
+        const n = ta.value.trim() ? ta.value.trim().split(/\s+/).length : 0;
+        wc.textContent = n;
+        wc.style.color = n > max ? '#dc2626' : '';
+      }
+      ta.addEventListener('input', count);
+      count();
+    })();
+    </script>
+    {% else %}
+    <div class="text-center" style="margin-bottom:2rem;">
+      <p class="text-muted">Publishing Events / News is limited to the official FAATN publisher account.</p>
+    </div>
+    {% endif %}
+
+    {% if events %}
+    <div class="modules-grid">
+      {% for e in events %}
+      <a href="{{ url_for('events_news_detail', event_id=e.id) }}" class="module-card" style="text-decoration:none;color:inherit;overflow:hidden;padding:0;background:#fff;">
+        {% if e.image_filename %}
+        <div style="height:160px;overflow:hidden;">
+          <img src="{{ url_for('static', filename='uploads/events/' + e.image_filename) }}" alt="{{ e.title }}" style="width:100%;height:100%;object-fit:cover;">
+        </div>
+        {% endif %}
+        <div style="padding:1.25rem;">
+          <span class="section-kicker" style="text-transform:capitalize;">{{ e.category or 'event' }}</span>
+          <h3 style="margin:0.5rem 0;color:#0f172a;">{{ e.title }}</h3>
+          <p class="text-muted" style="font-size:0.9rem;">
+            {% if e.description %}{{ e.description[:160] }}{% if e.description|length > 160 %}…{% endif %}{% endif %}
+          </p>
+          <p style="font-size:0.8rem;opacity:0.7;margin-top:0.75rem;">{{ e.created_at.strftime('%d %b %Y') }}</p>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted text-center">No Events / News published yet.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

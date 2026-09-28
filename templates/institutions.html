@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Institutions{% endblock %}
+{% block content %}
+<section class="section" style="padding-top:7.5rem;">
+  <div class="container" style="max-width:960px;">
+    <div class="section-header">
+      <p class="section-kicker">FAATN-GATE</p>
+      <h2>Institutions &amp; <span class="gradient-text">Partners</span></h2>
+      <p>Connect artisans and technicians with tertiary institutions, agencies, industry and development organisations.</p>
+    </div>
+    <form method="GET" class="find-form">
+      <div class="find-form-grid">
+        <div class="form-group">
+          <label>Type</label>
+          <select name="type" class="form-control">
+            <option value="">All types</option>
+            {% for t in types %}<option value="{{ t }}" {% if itype == t %}selected{% endif %}>{{ t }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>State</label>
+          <select name="state" class="form-control">
+            <option value="">All states</option>
+            {% for st in states %}<option value="{{ st }}" {% if state == st %}selected{% endif %}>{{ st }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="find-form-actions">
+        <button type="submit" class="btn btn-primary">Search</button>
+        <a href="{{ url_for('register') }}?role=institution" class="btn btn-outline">Register institution</a>
+      </div>
+    </form>
+    <div class="find-results">
+      {% for m in results %}
+      <article class="find-card">
+        <h3 class="find-name">{{ m.business_name or m.full_name }}</h3>
+        <p class="text-muted">{{ m.institution_type or 'Institution' }} · {{ m.location_state or '' }}</p>
+        <a href="{{ url_for('public_profile', user_id=m.id) }}" class="btn btn-outline btn-sm">View profile</a>
+      </article>
+      {% else %}
+      <p class="text-muted text-center">No institutions listed yet. Institutions can register via FAATN-GATE.</p>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

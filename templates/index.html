@@ -1,0 +1,549 @@
+{% extends "base.html" %}
+{% block body_class %}page-home{% endblock %}
+{% block title %}Home{% endblock %}
+{% block meta_description %}FAATN-GATE connects Nigerian artisans, technicians and engineers to training, innovation, markets and opportunity. Enter the GATE today.{% endblock %}
+{% block og_title %}FAATN-GATE | Connecting Skills, Innovation & Opportunities{% endblock %}
+{% block og_description %}Federation of Artisans and Technicians of Nigeria — digital gateway for skills, training, innovation and national impact.{% endblock %}
+{% block twitter_title %}FAATN-GATE | Connecting Skills, Innovation & Opportunities{% endblock %}
+{% block twitter_description %}Federation of Artisans and Technicians of Nigeria — digital gateway for skills, training, innovation and national impact.{% endblock %}
+
+{% block structured_data %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is FAATN-GATE?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "FAATN-GATE is the digital gateway of the Federation of Artisans and Technicians of Nigeria. It connects people, skills, innovation, opportunities and impact for artisans, technicians, engineers, institutions, government and industry."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Who can register on FAATN-GATE?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Artisans, technicians, engineers and technical professionals, institutions, government and development partners, industry, innovators, opportunity providers, and organisations that want to partner with FAATN."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is registration free?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Creating a FAATN-GATE account is free. After you register and log in, you can access the member dashboard, directory, training and opportunity pathways."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I enter the GATE?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Open the Gateway page, choose the option that describes you (for example artisan, technician or engineer), then create a free account or log in to your dashboard."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How can I contact FAATN?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Contact FAATN at Green Station, 5 Amiyi/Hospital Road, Umuaka, Njaba LGA, Imo State, Nigeria. Telephone +234 915 496 8109 or +234 803 677 1117. Email faatnigeria@gmail.com. WhatsApp and social handles: @faatnigeria."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is FAATN’s CAC registration number?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "FAATN is incorporated under CAC Registration No. CAC/IT/103696 and was established in 2017."
+      }
+    }
+  ]
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<!-- HERO -->
+<section class="hero section-home">
+  <div class="hero-bg" aria-hidden="true">
+    <div class="hero-flip-stage">
+      <div class="hero-slide is-active" style="background-image:url('{{ url_for('static', filename='images/backgrounds/bg1.jpg') }}')"></div>
+      <div class="hero-slide" style="background-image:url('{{ url_for('static', filename='images/backgrounds/bg2.jpg') }}')"></div>
+      <div class="hero-slide" style="background-image:url('{{ url_for('static', filename='images/backgrounds/bg3.jpg') }}')"></div>
+      <div class="hero-slide" style="background-image:url('{{ url_for('static', filename='images/backgrounds/bg4.jpg') }}')"></div>
+      <div class="hero-slide" style="background-image:url('{{ url_for('static', filename='images/backgrounds/bg5.jpg') }}')"></div>
+      <div class="hero-slide" style="background-image:url('{{ url_for('static', filename='images/backgrounds/bg6.jpg') }}')"></div>
+    </div>
+  </div>
+  <div class="hero-dots" role="tablist" aria-label="Hero background photos">
+    <button type="button" class="is-active" aria-label="Photo 1"></button>
+    <button type="button" aria-label="Photo 2"></button>
+    <button type="button" aria-label="Photo 3"></button>
+    <button type="button" aria-label="Photo 4"></button>
+    <button type="button" aria-label="Photo 5"></button>
+    <button type="button" aria-label="Photo 6"></button>
+  </div>
+  <div class="hero-content">
+    <div class="hero-copy">
+      <div class="hero-badge">
+        <span>🇳🇬</span> Gateway for Artisans & Technical Experts
+      </div>
+      <h1>
+        Connecting <span class="gradient-text">Skills</span>,<br>
+        Innovation & Opportunities
+      </h1>
+      <p>
+        FAATN-GATE is the digital gateway of the Federation of Artisans and Technicians of Nigeria — connecting <strong>people, skills, innovation, opportunities and impact</strong> in one clear pathway for artisans, technicians, engineers, institutions, government and industry.
+      </p>
+      <div class="hero-actions">
+        <a href="{{ url_for('gate') }}" class="btn btn-primary btn-gate-main">FAATN-GATE →</a>
+        <p class="hero-gate-sub">Connecting Nigeria's Artisans, Technicians, Suppliers, Institutions and Opportunities</p>
+        <a href="{{ url_for('register') }}" class="btn btn-outline">Create Free Account</a>
+        <a href="{{ url_for('login') }}" class="btn btn-outline">Login to Dashboard</a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-item">
+          <div class="stat-value">9</div>
+          <div class="stat-label">Stakeholder pathways</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">1</div>
+          <div class="stat-label">National gateway</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">∞</div>
+          <div class="stat-label">Skills to impact</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="card-3d card-side-1">
+        <div class="card-icon">👷🏿</div>
+        <h4>Artisans</h4>
+        <p>Register skills, find training & contracts</p>
+      </div>
+      <div class="card-3d card-main">
+        <div class="card-icon">🚪</div>
+        <h4>FAATN-GATE</h4>
+        <p>One secure entry point connecting people, skills, innovation and opportunities across Nigeria.</p>
+      </div>
+      <div class="card-3d card-side-2">
+        <div class="card-icon">💡</div>
+        <h4>Innovation</h4>
+        <p>From idea → prototype → commercialisation</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- VISION / MISSION / COMMITMENT -->
+<section class="section section-who-we-are" style="padding-top:0;">
+  <div class="container">
+    <div class="vmc-grid">
+      <div class="vmc-card vmc-vision">
+        <div class="vmc-bg" style="background-image:url('{{ url_for('static', filename='images/backgrounds/bg1.jpg') }}')"></div>
+        <div class="vmc-content">
+          <span class="vmc-badge">01 · Vision</span>
+          <h3>🎯 Our Vision</h3>
+          <p>To become the foremost organisation promoting innovation, indigenous technology, and sustainable development through Nigerian artisans and technicians.</p>
+        </div>
+      </div>
+      <div class="vmc-card vmc-mission">
+        <div class="vmc-bg" style="background-image:url('{{ url_for('static', filename='images/backgrounds/bg2.jpg') }}')"></div>
+        <div class="vmc-content">
+          <span class="vmc-badge">02 · Mission</span>
+          <h3>🚀 Our Mission</h3>
+          <p>To mobilise, organise and empower artisans and technicians through training, innovation, strategic partnerships, technology transfer, renewable energy development, artificial intelligence, business ethics, research collaboration, and access to modern tools and opportunities.</p>
+        </div>
+      </div>
+      <div class="vmc-card vmc-commitment">
+        <div class="vmc-bg" style="background-image:url('{{ url_for('static', filename='images/backgrounds/bg4.jpg') }}')"></div>
+        <div class="vmc-content">
+          <span class="vmc-badge">03 · Commitment</span>
+          <h3>🇳🇬 Our Commitment</h3>
+          <p>Supporting the Federal Government’s industrialisation agenda by promoting innovation, strengthening technical capacity, encouraging local manufacturing, creating employment, and positioning Nigerian artisans and technicians as key drivers of national development.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- GATE ENTRY -->
+<section class="section section-artisans section-gate" id="gate">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-kicker">02 — Enter the GATE</p>
+      <h2>FAATN-GATE <span class="gradient-text">Entry Pathways</span></h2>
+      <p>Choose who you are. You will be guided to the right services — without the complexity of the internal system.</p>
+    </div>
+    <div class="gate-grid">
+      <a href="{{ url_for('register') }}?role=artisan" class="gate-card artisan">
+        <div class="gate-icon">👷🏿</div>
+        <h3>I am an Artisan</h3>
+        <p>Carpenters, welders, tailors, builders…</p>
+      </a>
+      <a href="{{ url_for('register') }}?role=technician" class="gate-card technician">
+        <div class="gate-icon">🔧</div>
+        <h3>I am a Technician</h3>
+        <p>Electrical, mechanical, solar, ICT…</p>
+      </a>
+      <a href="{{ url_for('register') }}?role=engineer" class="gate-card engineer">
+        <div class="gate-icon">👷🏿‍♂️</div>
+        <h3>Engineer / Technical Professional</h3>
+        <p>NSE members, consultants, specialists</p>
+      </a>
+      <a href="{{ url_for('register') }}?role=institution" class="gate-card institution">
+        <div class="gate-icon">🏛️</div>
+        <h3>Institution</h3>
+        <p>Universities, TVET, Research centres</p>
+      </a>
+      <a href="{{ url_for('register') }}?role=government" class="gate-card government">
+        <div class="gate-icon">👥</div>
+        <h3>Government / Development Partner</h3>
+        <p>Ministries, agencies, NGOs, donors</p>
+      </a>
+      <a href="{{ url_for('register') }}?role=industry" class="gate-card industry">
+        <div class="gate-icon">🏭</div>
+        <h3>Industry / Private Sector</h3>
+        <p>Manufacturers, contractors, employers</p>
+      </a>
+      <a href="{{ url_for('register') }}?role=innovation" class="gate-card innovation">
+        <div class="gate-icon">💡</div>
+        <h3>I have an Innovation / Idea</h3>
+        <p>From concept to commercialisation</p>
+      </a>
+      <a href="{{ url_for('register') }}?role=opportunity" class="gate-card opportunity">
+        <div class="gate-icon">💼</div>
+        <h3>I have an Opportunity</h3>
+        <p>Jobs, contracts, grants, projects</p>
+      </a>
+      <a href="{{ url_for('register') }}?role=partner" class="gate-card partner">
+        <div class="gate-icon">🤝</div>
+        <h3>I want to Partner with FAATN</h3>
+        <p>Strategic collaboration</p>
+      </a>
+    </div>
+
+    <div class="home-services" id="gate-services">
+      <h3 class="gate-block-title" style="text-align:center;margin-bottom:0.5rem;">What you can find on FAATN-GATE</h3>
+      <p class="text-muted text-center" style="margin-bottom:1.25rem;max-width:640px;margin-left:auto;margin-right:auto;">Discover people, skills, training, suppliers and support — built for national planning and opportunity.</p>
+      <div class="service-grid service-grid-home">
+        <a href="{{ url_for('gate') }}#services" class="service-card service-card-compact"><span class="service-num">01</span><h4>Find an Artisan</h4></a>
+        <a href="{{ url_for('gate') }}#services" class="service-card service-card-compact"><span class="service-num">02</span><h4>Find a Technician</h4></a>
+        <a href="{{ url_for('gate') }}#services" class="service-card service-card-compact"><span class="service-num">03</span><h4>Find Spare Parts</h4></a>
+        <a href="{{ url_for('gate') }}#services" class="service-card service-card-compact"><span class="service-num">04</span><h4>Find Equipment</h4></a>
+        <a href="{{ url_for('gate') }}#services" class="service-card service-card-compact"><span class="service-num">05</span><h4>Find a Supplier</h4></a>
+        <a href="{{ url_for('gate') }}#services" class="service-card service-card-compact"><span class="service-num">06</span><h4>Find Training</h4></a>
+        <a href="{{ url_for('gate') }}#services" class="service-card service-card-compact"><span class="service-num">07</span><h4>Artisan Cluster</h4></a>
+        <a href="{{ url_for('about') }}#zonal-coordinators" class="service-card service-card-compact"><span class="service-num">08</span><h4>FAATN Office</h4></a>
+        <a href="{{ url_for('gate') }}#services" class="service-card service-card-compact"><span class="service-num">09</span><h4>Technical Assistance</h4></a>
+        <a href="{{ url_for('register') }}" class="service-card service-card-compact service-card-primary"><span class="service-num">10</span><h4>Register</h4></a>
+        <a href="{{ url_for('gate') }}#services" class="service-card service-card-compact"><span class="service-num">11</span><h4>Tertiary Institutions</h4></a>
+        <a href="{{ url_for('gate') }}#services" class="service-card service-card-compact"><span class="service-num">12</span><h4>Innovation Projects</h4></a>
+      </div>
+      <p class="text-center" style="margin-top:1.25rem;">
+        <a href="{{ url_for('gate') }}" class="btn btn-primary btn-sm">Open full GATE pathways</a>
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- FUNCTIONAL MODULES / PROGRAMMES -->
+<section class="section section-programmes" id="programmes">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-kicker">03 — How FAATN-GATE works</p>
+      <h2>Skills → Training → Innovation → Projects → Markets</h2>
+      <p>A working ecosystem connecting people, skills, innovation, opportunities and impact — with a clear technical bridge to Engineers/NSE, Institutions, Government and Industry.</p>
+    </div>
+    <div class="modules-grid">
+      <div class="module-card">
+        <div class="module-number">01</div>
+        <h3>Skills directory</h3>
+        <p class="text-muted mt-1">Find artisans and technicians by trade, specialty and location.</p>
+      </div>
+      <div class="module-card">
+        <div class="module-number">02</div>
+        <h3>Training</h3>
+        <p class="text-muted mt-1">Close skill gaps with practical training, assessment and certification.</p>
+      </div>
+      <div class="module-card">
+        <div class="module-number">03</div>
+        <h3>Innovation</h3>
+        <p class="text-muted mt-1">Move ideas from concept toward prototype and real-world use.</p>
+      </div>
+      <div class="module-card">
+        <div class="module-number">04</div>
+        <h3>Projects</h3>
+        <p class="text-muted mt-1">Collaborate on delivery with partners across the value chain.</p>
+      </div>
+      <div class="module-card">
+        <div class="module-number">05</div>
+        <h3>Opportunities</h3>
+        <p class="text-muted mt-1">Jobs, contracts and grants matched to the right skills.</p>
+      </div>
+      <div class="module-card">
+        <div class="module-number">06</div>
+        <h3>Markets</h3>
+        <p class="text-muted mt-1">Link artisan products and services to industry and buyers.</p>
+      </div>
+      <div class="module-card">
+        <div class="module-number">07</div>
+        <h3>Engineers & NSE</h3>
+        <p class="text-muted mt-1">Technical guidance and quality support from engineers and professionals.</p>
+      </div>
+      <div class="module-card">
+        <div class="module-number">08</div>
+        <h3>Institutions & Government</h3>
+        <p class="text-muted mt-1">Clear channels for institutions, government and development partners.</p>
+      </div>
+      <div class="module-card">
+        <div class="module-number">09</div>
+        <h3>Impact tracking</h3>
+        <p class="text-muted mt-1">Transparent progress and outcomes for members and partners.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Leadership Messages teaser -->
+<section class="section section-leadership" id="leadership-home">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-kicker">Leadership</p>
+      <h2>Messages from the <span class="gradient-text">Chairman &amp; Secretary</span></h2>
+      <p>Vision, purpose and institutional commitment from FAATN’s national officers</p>
+    </div>
+    <div class="msg-grid">
+      <article class="msg-chairman">
+        <div class="msg-profile">
+          <img src="{{ url_for('static', filename='images/leadership/chairman.jpg') }}" alt="Professor Mazi Ojiaku" class="msg-photo-lg">
+          <div class="msg-profile-meta">
+            <p class="msg-role">Chairman</p>
+            <h3 class="msg-person-name">Professor Mazi Ojiaku</h3>
+            <p class="msg-person-title">FAATN</p>
+            <p class="msg-handle">@faatnigeria</p>
+          </div>
+        </div>
+        <p style="margin-top:1rem;">FAATN exists to give artisans and technicians a unified national platform—placing indigenous technical capacity at the centre of industrialisation, employment and sustainable development.</p>
+        <p class="msg-sign" style="margin-top:1rem;">People → Skills → Innovation → Opportunities → Impact</p>
+        <a href="{{ url_for('about') }}#leadership-messages" class="btn btn-outline btn-sm" style="margin-top:1rem;border-color:rgba(255,255,255,0.6);color:#fff;">Read full message</a>
+      </article>
+      <article class="msg-secretary">
+        <div class="msg-profile">
+          <img src="{{ url_for('static', filename='images/leadership/secretary.jpg') }}" alt="Barrister Ajoku Philip Ogadinma" class="msg-photo-lg">
+          <div class="msg-profile-meta">
+            <p class="msg-role">Secretary</p>
+            <h3 class="msg-person-name">Barr. Ajoku Philip Ogadinma</h3>
+            <p class="msg-person-title">FAATN</p>
+            <p class="msg-handle">@faatnigeria</p>
+          </div>
+        </div>
+        <p style="margin-top:1rem;">FAATN is an organised institution committed to skills, training, innovation, partnership and accountability—with FAATN-GATE as a practical entry point for every stakeholder.</p>
+        <p class="msg-sign" style="margin-top:1rem;">Programmes · Partnerships · Service</p>
+        <a href="{{ url_for('about') }}#leadership-messages" class="btn btn-outline btn-sm" style="margin-top:1rem;border-color:rgba(255,255,255,0.6);color:#fff;">Read full message</a>
+      </article>
+    </div>
+    <p class="text-center" style="margin-top:1.5rem;">
+      <a href="{{ url_for('about') }}#leadership" class="btn btn-primary btn-sm">Full leadership team</a>
+    </p>
+  </div>
+</section>
+
+
+<!-- FAQ (matches FAQPage schema) -->
+<section class="section section-faq section-leadership" id="faq">
+  <div class="container" style="max-width:800px;">
+    <div class="section-header">
+      <p class="section-kicker">Help</p>
+      <h2>Frequently asked <span class="gradient-text">questions</span></h2>
+    </div>
+    <div class="faq-list">
+      <details class="faq-item">
+        <summary>What is FAATN-GATE?</summary>
+        <p>FAATN-GATE is the digital gateway of the Federation of Artisans and Technicians of Nigeria. It connects people, skills, innovation, opportunities and impact for artisans, technicians, engineers, institutions, government and industry.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Who can register on FAATN-GATE?</summary>
+        <p>Artisans, technicians, engineers and technical professionals, institutions, government and development partners, industry, innovators, opportunity providers, and organisations that want to partner with FAATN.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Is registration free?</summary>
+        <p>Yes. Creating a FAATN-GATE account is free. After you register and log in, you can access the member dashboard, directory, training and opportunity pathways.</p>
+      </details>
+      <details class="faq-item">
+        <summary>How do I enter the GATE?</summary>
+        <p>Open the Gateway page, choose the option that describes you (for example artisan, technician or engineer), then create a free account or log in to your dashboard.</p>
+      </details>
+      <details class="faq-item">
+        <summary>How can I contact FAATN?</summary>
+        <p>Green Station, 5 Amiyi/Hospital Road, Umuaka, Njaba LGA, Imo State. Tel: +234 915 496 8109 · +234 803 677 1117. Email: faatnigeria@gmail.com. Social: @faatnigeria.</p>
+      </details>
+      <details class="faq-item">
+        <summary>What is FAATN’s CAC registration number?</summary>
+        <p>FAATN is incorporated under CAC Registration No. CAC/IT/103696 and was established in 2017.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- Explore more (items not in main header — listed on Home only) -->
+<section class="section section-explore section-soft" id="explore">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-kicker">On this site</p>
+      <h2>Explore <span class="gradient-text">FAATN-GATE</span></h2>
+      <p>Programmes, partners, innovation, resources, gallery and more — all from the home page.</p>
+    </div>
+    <div class="modules-grid">
+      <a href="#programmes" class="module-card" style="text-decoration:none;color:inherit;">
+        <h3>Programmes</h3>
+        <p class="text-muted mt-1">Skills → Training → Innovation → Projects → Markets</p>
+      </a>
+      <a href="#partners" class="module-card" style="text-decoration:none;color:inherit;">
+        <h3>Partners</h3>
+        <p class="text-muted mt-1">Government, industry, institutions and development partners</p>
+      </a>
+      <a href="#innovation" class="module-card" style="text-decoration:none;color:inherit;">
+        <h3>Innovation</h3>
+        <p class="text-muted mt-1">From idea to screening, prototype and deployment</p>
+      </a>
+      <a href="#resources" class="module-card" style="text-decoration:none;color:inherit;">
+        <h3>Resources</h3>
+        <p class="text-muted mt-1">Support for members and partners</p>
+      </a>
+      <a href="{{ url_for('events_news_public') }}" class="module-card" style="text-decoration:none;color:inherit;">
+        <h3>📰 Events / News</h3>
+        <p class="text-muted mt-1">Official announcements and full stories</p>
+        <span class="btn btn-primary btn-sm" style="margin-top:0.75rem;display:inline-flex;">Open</span>
+      </a>
+      <a href="{{ url_for('gallery_public') }}" class="module-card" style="text-decoration:none;color:inherit;">
+        <h3>🖼️ Gallery</h3>
+        <p class="text-muted mt-1">Photos from programmes across Nigeria</p>
+        <span class="btn btn-outline btn-sm" style="margin-top:0.75rem;display:inline-flex;">Open</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section section-cta section-get-involved" id="join">
+  <div class="container">
+    <div class="cta-panel">
+      <p class="section-kicker">Next step</p>
+      <h2>Ready to join the GATE?</h2>
+      <p class="cta-lead">
+        Whether you are an <strong>artisan looking for work</strong>, a <strong>technician seeking certification</strong>,
+        or an <strong>industry partner needing talent</strong> — start here.
+      </p>
+      <div class="cta-actions">
+        <a href="{{ url_for('gate') }}" class="btn btn-outline">Enter the GATE</a>
+        <a href="{{ url_for('register') }}" class="btn btn-primary">Create Free Account</a>
+        <a href="{{ url_for('login') }}" class="btn btn-outline">Login to Dashboard</a>
+      </div>
+      <p class="cta-hint">Public site stays simple · Member tools open after you sign in</p>
+    </div>
+  </div>
+</section>
+
+<!-- Partners / Innovation / Resources anchors (public, simple) -->
+<section class="section section-partners section-soft" id="partners">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-kicker">04 — Partners</p>
+      <h2>Collaboration across the ecosystem</h2>
+      <p>Government, development partners, industry, institutions and NSE professionals connect through FAATN-GATE for skills, projects and impact.</p>
+    </div>
+    <div class="partner-pills">
+      <span>Federal Ministry of Innovation, Science & Technology</span>
+      <span>Nigerian Society of Engineers (NSE)</span>
+      <span>NBTE</span>
+      <span>ASNAT</span>
+      <span>Universities & TVET</span>
+      <span>Industry & Development Partners</span>
+    </div>
+    <div class="cta-actions" style="justify-content:center;margin-top:1.75rem;">
+      <a href="{{ url_for('register') }}?role=partner" class="btn btn-primary">Partner with FAATN</a>
+      <a href="{{ url_for('contact') }}" class="btn btn-outline">Contact Head Office</a>
+    </div>
+  </div>
+</section>
+
+<section class="section section-innovation" id="innovation">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-kicker">05 — Innovation</p>
+      <h2>From idea to impact</h2>
+      <p>Artisans and technicians can submit ideas; engineers and institutions help assess, prototype and move toward commercialisation.</p>
+    </div>
+    <div class="journey-strip">
+      <span>Idea</span><span class="arrow">→</span>
+      <span>Screening</span><span class="arrow">→</span>
+      <span>Assessment</span><span class="arrow">→</span>
+      <span>Prototype</span><span class="arrow">→</span>
+      <span>Deployment</span>
+    </div>
+    <div class="cta-actions" style="justify-content:center;margin-top:1.75rem;">
+      <a href="{{ url_for('register') }}?role=innovation" class="btn btn-primary">Submit an Innovation</a>
+    </div>
+  </div>
+</section>
+
+<section class="section section-resources section-soft" id="resources">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-kicker">06 — Resources</p>
+      <h2>Support for members and partners</h2>
+      <p>Training pathways, technical guidance, market linkage and programme information — accessible after registration where personalised matching begins.</p>
+    </div>
+    <div class="cta-actions" style="justify-content:center;">
+      <a href="{{ url_for('gate') }}" class="btn btn-primary">Enter the GATE</a>
+      <a href="{{ url_for('about') }}" class="btn btn-outline">About FAATN</a>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.hero-bg .hero-slide'));
+  var dots = Array.prototype.slice.call(document.querySelectorAll('.hero-dots button'));
+  if (!slides.length) return;
+  var i = 0;
+  var locked = false;
+  var timer;
+
+  function show(next) {
+    if (locked || next === i) return;
+    locked = true;
+    var current = slides[i];
+    var incoming = slides[next];
+    current.classList.remove('is-active');
+    current.classList.add('is-leaving');
+    incoming.classList.remove('is-leaving');
+    incoming.classList.add('is-active');
+    dots.forEach(function (d, idx) { d.classList.toggle('is-active', idx === next); });
+    i = next;
+    setTimeout(function () {
+      current.classList.remove('is-leaving');
+      locked = false;
+    }, 900);
+  }
+
+  function tick() { show((i + 1) % slides.length); }
+  function start() { timer = setInterval(tick, 4500); }
+  function restart() { clearInterval(timer); start(); }
+
+  dots.forEach(function (dot, idx) {
+    dot.addEventListener('click', function () { show(idx); restart(); });
+  });
+  start();
+})();
+</script>
+{% endblock %}

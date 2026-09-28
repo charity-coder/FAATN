@@ -1,0 +1,155 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block dashboard_content %}
+<section class="admin-overview-section">
+<div class="topbar">
+  <div>
+    <h1>FAATN Administration Portal</h1>
+    <p class="admin-mix-line">
+      <span>User Management</span>
+      <span class="dot">·</span>
+      <span>Verification</span>
+      <span class="dot">·</span>
+      <span>Data Analytics</span>
+      <span class="dot">·</span>
+      <span>Project Tracking</span>
+      <span class="dot">·</span>
+      <span>Reporting</span>
+    </p>
+  </div>
+</div>
+
+{% if stats %}
+<div class="stats-row">
+  <div class="stat-card"><div class="stat-content"><h3>{{ stats.artisans }}</h3><p>Artisans</p></div></div>
+  <div class="stat-card"><div class="stat-content"><h3>{{ stats.technicians }}</h3><p>Technicians</p></div></div>
+  <div class="stat-card"><div class="stat-content"><h3>{{ stats.suppliers }}</h3><p>Suppliers</p></div></div>
+  <div class="stat-card"><div class="stat-content"><h3>{{ stats.registered }}</h3><p>Registered</p></div></div>
+  <div class="stat-card"><div class="stat-content"><h3>{{ stats.verified }}</h3><p>Verified</p></div></div>
+  <div class="stat-card"><div class="stat-content"><h3>{{ stats.accredited }}</h3><p>Accredited</p></div></div>
+  <div class="stat-card"><div class="stat-content"><h3>{{ stats.states_covered }}</h3><p>States</p></div></div>
+  <div class="stat-card"><div class="stat-content"><h3>{{ stats.help_open }}</h3><p>Help requests</p></div></div>
+</div>
+{% endif %}
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-icon teal">👥</div>
+    <div class="stat-content">
+      <h3>{{ total_users }}</h3>
+      <p>Total Members</p>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon amber">💼</div>
+    <div class="stat-content">
+      <h3>{{ total_opps }}</h3>
+      <p>Opportunities</p>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon purple">💡</div>
+    <div class="stat-content">
+      <h3>{{ total_innov }}</h3>
+      <p>Innovations</p>
+    </div>
+  </div>
+</div>
+</section>
+
+
+<section class="admin-section">
+<div class="dash-card mb-3">
+  <div class="dash-card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
+    <h3>PostgreSQL &amp; connection pool</h3>
+    <a href="{{ url_for('admin_db_metrics') }}" class="btn btn-outline btn-sm" target="_blank">JSON metrics</a>
+  </div>
+  <div class="dash-card-body">
+    {% if db_metrics and not db_metrics.error %}
+    <div class="stats-row" style="margin-bottom:1rem;">
+      <div class="stat-card">
+        <div class="stat-content">
+          <h3>{{ db_metrics.pool.checked_out if db_metrics.pool.checked_out is not none else '—' }}</h3>
+          <p>Pool checked out</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-content">
+          <h3>{{ db_metrics.pool.checked_in if db_metrics.pool.checked_in is not none else '—' }}</h3>
+          <p>Pool available</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-content">
+          <h3>{{ db_metrics.postgres.active if db_metrics.postgres.active is defined else '—' }}</h3>
+          <p>PG active sessions</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-content">
+          <h3>{{ db_metrics.postgres.total if db_metrics.postgres.total is defined else '—' }} / {{ db_metrics.postgres.max_connections if db_metrics.postgres.max_connections is defined else '—' }}</h3>
+          <p>PG total / max</p>
+        </div>
+      </div>
+    </div>
+    <p class="text-muted" style="font-size:0.85rem;line-height:1.6;">
+      Driver: <strong>{{ db_metrics.pool.driver }}</strong> ·
+      Host: <strong>{{ db_metrics.pool.host or '—' }}</strong> ·
+      DB: <strong>{{ db_metrics.pool.database }}</strong> ·
+      Pool: <strong>{{ db_metrics.pool.pool_class }}</strong>
+      {% if db_metrics.pool.status %}<br><code style="font-size:0.8rem;">{{ db_metrics.pool.status }}</code>{% endif %}
+      {% if db_metrics.postgres.server_version %}<br>PostgreSQL {{ db_metrics.postgres.server_version }}{% endif %}
+      <br>Idle: {{ db_metrics.postgres.idle if db_metrics.postgres.idle is defined else '—' }} ·
+      Idle in transaction: {{ db_metrics.postgres.idle_in_tx if db_metrics.postgres.idle_in_tx is defined else '—' }}
+    </p>
+    {% else %}
+    <p class="text-muted">Could not read metrics{% if db_metrics and db_metrics.error %}: {{ db_metrics.error }}{% endif %}</p>
+    <p class="text-muted" style="font-size:0.85rem;">Metrics require a live PostgreSQL connection (set DATABASE_URL).</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="dash-card">
+  <div class="dash-card-header"><h3>Recent Registrations</h3></div>
+  <div class="dash-card-body">
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Location</th>
+            <th>Joined</th>
+            <th>Verified</th>
+            <th>Listing category</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td><strong>{{ u.full_name }}</strong></td>
+            <td>{{ u.email }}</td>
+            <td><span class="status-pill status-pending">{{ u.role }}</span></td>
+            <td>{{ u.location_state or '—' }}</td>
+            <td>{{ u.created_at.strftime('%d %b %Y') }}</td>
+            <td>{% if u.verified %}✓{% else %}—{% endif %}</td>
+            <td>
+              <form method="POST" action="{{ url_for('set_listing_category', user_id=u.id) }}" style="display:flex;gap:0.35rem;align-items:center;">
+                <select name="listing_category" class="form-control" style="font-size:0.8rem;padding:0.25rem;">
+                  {% for key, label in listing_categories.items() %}
+                  <option value="{{ key }}" {% if u.listing_category == key %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-primary btn-sm">Set</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</section>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-header">
+      <h1>Welcome <span class="gradient-text">Back</span></h1>
+      <p>Login to your FAATN-GATE dashboard</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('login') }}">
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" name="email" class="form-control" required placeholder="you@example.com" autofocus autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <div class="password-field">
+          <input type="password" id="password" name="password" class="form-control" required placeholder="••••••••" autocomplete="current-password">
+          <button type="button" class="password-toggle" id="passwordToggle" aria-label="Show password" title="Show password">Show</button>
+        </div>
+      </div>
+      <div class="form-check" style="justify-content:space-between;flex-wrap:wrap;gap:0.5rem;">
+        <div style="display:flex;align-items:center;gap:0.5rem;">
+          <input type="checkbox" name="remember" id="remember">
+          <label for="remember">Remember me</label>
+        </div>
+        <a href="{{ url_for('forgot_password') }}" style="color:var(--primary-light);font-size:0.85rem;text-decoration:none;">Forgot password?</a>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block" style="min-height:48px;width:100%;">Login to Dashboard</button>
+    </form>
+
+    <div class="auth-footer">
+      Don’t have an account? <a href="{{ url_for('register') }}">Register free</a>
+    </div>
+
+    <div style="margin-top:2rem;padding:1rem;background:rgba(13,148,136,0.1);border-radius:12px;border:1px solid rgba(13,148,136,0.2);">
+      <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.5rem;"><strong>Demo Accounts</strong></p>
+      <p style="font-size:0.8rem;color:var(--text-muted);line-height:1.7;">
+        <strong>Artisan:</strong> artisan@demo.ng / Artisan@123<br>
+        <strong>Technician:</strong> tech@demo.ng / Tech@123<br>
+        <strong>Engineer:</strong> engineer@demo.ng / Engineer@123<br>
+        <strong>Admin:</strong> admin@faatn.ng / Admin@FAATN2026
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+  var input = document.getElementById('password');
+  var btn = document.getElementById('passwordToggle');
+  if (!input || !btn) return;
+  btn.addEventListener('click', function() {
+    var show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    btn.textContent = show ? 'Hide' : 'Show';
+    btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+    btn.title = show ? 'Hide password' : 'Show password';
+  });
+})();
+</script>
+{% endblock %}

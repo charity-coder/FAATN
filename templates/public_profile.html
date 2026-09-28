@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ member.occupation or member.role }} — {{ member.location_state or 'Nigeria' }} | FAATN-GATE{% endblock %}
+{% block meta_description %}FAATN-GATE — {{ member.occupation or member.role }} in {{ member.location_community or '' }} {{ member.location_state or 'Nigeria' }}. {{ member.listing_label }}.{% endblock %}
+{% block og_title %}FAATN-GATE — {{ member.occupation or member.full_name }} — {{ member.location_state or 'Nigeria' }}{% endblock %}
+{% block content %}
+<section class="section" style="padding-top:7.5rem;">
+  <div class="container" style="max-width:720px;">
+    <article class="find-card" style="padding:2rem;">
+      <div class="find-card-top">
+        {% if member.profile_pic %}
+        <img src="{{ url_for('static', filename='uploads/avatars/' + member.profile_pic) }}" alt="{{ member.full_name }}" class="find-avatar">
+        {% else %}
+        <div class="find-avatar find-avatar-fallback">{{ member.full_name[0] }}</div>
+        {% endif %}
+        <div>
+          <h1 class="find-name" style="font-size:1.5rem;">{{ member.full_name }}</h1>
+          {% if member.business_name %}<p class="text-muted">{{ member.business_name }}</p>{% endif %}
+          <span class="listing-badge {{ member.badge_class() }}">{{ member.listing_label }}</span>
+        </div>
+      </div>
+      <dl class="find-meta">
+        <div><dt>Occupation</dt><dd>{{ member.occupation or member.role }}</dd></div>
+        <div><dt>Specialisation</dt><dd>{{ member.specialty or '—' }}</dd></div>
+        <div><dt>Location</dt><dd>{{ member.location_community or '' }}{% if member.location_lga %}, {{ member.location_lga }}{% endif %}{% if member.location_state %}, {{ member.location_state }}{% endif %}</dd></div>
+        <div><dt>Experience</dt><dd>{{ member.experience_years or 0 }} years</dd></div>
+        <div><dt>Availability</dt><dd>{{ member.availability or '—' }}</dd></div>
+        {% if member.workshop_address %}<div><dt>Workshop</dt><dd>{{ member.workshop_address }}</dd></div>{% endif %}
+        {% if member.certifications %}<div><dt>Certifications</dt><dd>{{ member.certifications }}</dd></div>{% endif %}
+      </dl>
+      <div class="find-actions">
+        {% if member.phone %}<a class="btn btn-outline btn-sm" href="tel:{{ member.phone }}">Call</a>{% endif %}
+        {% if member.whatsapp or member.phone %}
+        <a class="btn btn-primary btn-sm" target="_blank" rel="noopener"
+           href="https://wa.me/{{ (member.whatsapp or member.phone)|replace('+','')|replace(' ','') }}">WhatsApp</a>
+        {% endif %}
+        {% if member.email %}<a class="btn btn-outline btn-sm" href="mailto:{{ member.email }}">Email</a>{% endif %}
+        <a class="btn btn-outline btn-sm" href="{{ url_for('need_help') }}">Request Service</a>
+        <a class="btn btn-outline btn-sm" target="_blank" rel="noopener"
+           href="https://www.google.com/maps/search/?api=1&amp;query={{ ((member.location_community or '') ~ ' ' ~ (member.location_lga or '') ~ ' ' ~ (member.location_state or '') ~ ' Nigeria')|urlencode }}">Directions (Google Maps)</a>
+      </div>
+      <p class="text-muted" style="margin-top:1.25rem;font-size:0.85rem;">FAATN-GATE is the master record for this listing. Google Maps is used only for location and directions.</p>
+    </article>
+  </div>
+</section>
+{% endblock %}

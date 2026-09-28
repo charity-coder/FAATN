@@ -1,0 +1,117 @@
+{% extends "dashboard_base.html" %}
+{% block title %}My Products & Services{% endblock %}
+
+{% block dashboard_content %}
+<div class="topbar">
+  <h1>🛒 Marketplace Listings</h1>
+  <p class="text-muted">Upload a photo gallery for each product or service — public view on the FAATN marketplace.</p>
+</div>
+
+<div class="dash-card mb-3">
+  <div class="dash-card-header"><h3>Add product or service</h3></div>
+  <div class="dash-card-body">
+    <form method="POST" action="{{ url_for('manage_products') }}" enctype="multipart/form-data" class="product-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="title">Title *</label>
+          <input type="text" id="title" name="title" class="form-control" required maxlength="200" placeholder="e.g. Custom wooden door">
+        </div>
+        <div class="form-group">
+          <label for="category">Type *</label>
+          <select id="category" name="category" class="form-control" required>
+            <option value="product">Product</option>
+            <option value="service">Service</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="price">Price (optional)</label>
+          <input type="text" id="price" name="price" class="form-control" placeholder="e.g. ₦15,000 or Negotiable">
+        </div>
+        <div class="form-group">
+          <label for="images">Photo gallery * (up to 12)</label>
+          <input type="file" id="images" name="images" class="form-control" accept="image/png,image/jpeg,image/jpg,image/webp,image/gif" multiple>
+          <p class="text-muted" style="font-size:0.8rem;margin-top:0.35rem;">Select multiple photos. First image is the cover.</p>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="description">Description</label>
+        <textarea id="description" name="description" class="form-control" rows="3" placeholder="Describe materials, sizes, delivery area, or what the service covers…"></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary" style="min-height:48px;width:100%;max-width:320px;">Publish to marketplace</button>
+    </form>
+  </div>
+</div>
+
+<div class="dash-card">
+  <div class="dash-card-header"><h3>Your listings ({{ products|length }})</h3></div>
+  <div class="dash-card-body">
+    {% if products %}
+    <div class="product-grid product-grid-manage">
+      {% for p in products %}
+      <article class="product-card {% if not p.is_active %}product-card-inactive{% endif %}">
+        <div class="product-image-wrap">
+          {% if p.image_url() %}
+          <img src="{{ p.image_url() }}" alt="{{ p.title }}" class="product-image" loading="lazy">
+          {% else %}
+          <div class="product-image product-image-fallback">📦</div>
+          {% endif %}
+          <span class="product-badge">{{ p.category|capitalize }}</span>
+          {% set gcount = p.images|length if p.images else (1 if p.image_filename else 0) %}
+          {% if gcount > 1 %}
+          <span class="product-gallery-count">{{ gcount }} photos</span>
+          {% endif %}
+        </div>
+        <div class="product-body">
+          <h3 class="product-title">{{ p.title }}</h3>
+          {% if p.price %}<p class="product-price">{{ p.price }}</p>{% endif %}
+          <p class="text-muted" style="font-size:0.85rem;">{{ 'Public' if p.is_active else 'Hidden' }} · {{ p.created_at.strftime('%d %b %Y') }}</p>
+
+          {% if p.images %}
+          <div class="manage-gallery-thumbs">
+            {% for img in p.images %}
+            <div class="manage-thumb">
+              <img src="{{ img.url() }}" alt="">
+              <form method="POST" action="{{ url_for('delete_product_image', image_id=img.id) }}" onsubmit="return confirm('Remove this photo?');">
+                <button type="submit" class="thumb-delete" title="Remove photo" aria-label="Remove photo">×</button>
+              </form>
+            </div>
+            {% endfor %}
+          </div>
+          {% elif p.image_filename %}
+          <div class="manage-gallery-thumbs">
+            <div class="manage-thumb">
+              <img src="{{ p.image_url() }}" alt="">
+            </div>
+          </div>
+          {% endif %}
+
+          <form method="POST" action="{{ url_for('add_product_images', product_id=p.id) }}" enctype="multipart/form-data" class="add-photos-form">
+            <label class="text-muted" style="font-size:0.8rem;">Add more photos</label>
+            <div style="display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center;">
+              <input type="file" name="images" accept="image/png,image/jpeg,image/jpg,image/webp,image/gif" multiple class="form-control" style="flex:1;min-width:140px;font-size:0.85rem;">
+              <button type="submit" class="btn btn-outline btn-sm" style="min-height:44px;">Upload</button>
+            </div>
+          </form>
+
+          <div class="product-actions" style="flex-wrap:wrap;gap:0.5rem;margin-top:0.75rem;">
+            <a href="{{ url_for('marketplace_detail', product_id=p.id) }}" class="btn btn-outline btn-sm">View</a>
+            <form method="POST" action="{{ url_for('toggle_product', product_id=p.id) }}" style="display:inline;">
+              <button type="submit" class="btn btn-outline btn-sm">{{ 'Hide' if p.is_active else 'Publish' }}</button>
+            </form>
+            <form method="POST" action="{{ url_for('delete_product', product_id=p.id) }}" style="display:inline;" onsubmit="return confirm('Delete this listing and all photos?');">
+              <button type="submit" class="btn btn-outline btn-sm" style="border-color:#f87171;color:#b91c1c;">Delete</button>
+            </form>
+          </div>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    <p style="margin-top:1.25rem;"><a href="{{ url_for('marketplace') }}" class="btn btn-outline">View public marketplace</a></p>
+    {% else %}
+    <div class="empty-state"><p>You have not listed any products or services yet. Use the form above and select multiple photos for a gallery.</p></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

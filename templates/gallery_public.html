@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Gallery{% endblock %}
+{% block meta_description %}FAATN photo gallery — programmes, training, innovation and community work across Nigeria.{% endblock %}
+{% block content %}
+<section class="section" style="padding-top:7rem;">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-kicker">FAATN in pictures</p>
+      <h2>Photo <span class="gradient-text">Gallery</span></h2>
+      <p>Moments from training, innovation, partnerships and community work across Nigeria.</p>
+    </div>
+
+    {% if can_post %}
+    <div class="dash-card" style="max-width:560px;margin:0 auto 2.5rem;background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:1.5rem;">
+      <h3 style="margin-bottom:0.75rem;color:#0f172a;">Upload to Gallery (Official publisher only)</h3>
+      <form method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+          <label>Title</label>
+          <input type="text" name="title" class="form-control" placeholder="Optional title">
+        </div>
+        <div class="form-group">
+          <label>Caption</label>
+          <textarea name="caption" class="form-control" rows="2" placeholder="Optional short caption"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Image *</label>
+          <input type="file" name="image" class="form-control" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Upload image</button>
+      </form>
+    </div>
+    {% else %}
+    <div class="text-center" style="margin-bottom:2rem;">
+      <p class="text-muted">Gallery uploads are limited to the official FAATN publisher account.</p>
+    </div>
+    {% endif %}
+
+    {% if items %}
+    <div class="gallery-grid">
+      {% for item in items %}
+      <figure class="gallery-item">
+        <img src="{{ url_for('static', filename='uploads/gallery/' + item.image_filename) }}" alt="{{ item.title or item.caption or 'FAATN gallery photo' }}">
+        {% if item.title or item.caption %}
+        <figcaption>
+          {% if item.title %}<strong>{{ item.title }}</strong>{% endif %}
+          {% if item.caption %}<span>{{ item.caption }}</span>{% endif %}
+        </figcaption>
+        {% endif %}
+      </figure>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted text-center">Gallery photos will appear here once published by FAATN.</p>
+    {% endif %}
+  </div>
+</section>
+<style>
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.25rem;
+}
+.gallery-item {
+  margin: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+}
+.gallery-item img {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  display: block;
+}
+.gallery-item figcaption {
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: #0f172a;
+  font-size: 0.9rem;
+}
+.gallery-item figcaption span { color: #475569; font-size: 0.85rem; }
+</style>
+{% endblock %}

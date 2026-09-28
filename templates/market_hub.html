@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block title %}Market Hub{% endblock %}
+{% block meta_description %}FAATN Market Hub — products, services, artisans, technicians and suppliers across Nigeria in one place.{% endblock %}
+
+{% block content %}
+<section class="section market-hub-hero" style="padding-top:6.5rem;padding-bottom:2rem;">
+  <div class="container">
+    <div class="section-header" style="margin-bottom:1.5rem;">
+      <p class="section-kicker">FAATN Market Hub</p>
+      <h2>Buy · Hire · <span class="gradient-text">Connect</span></h2>
+      <p>One hub for artisan products, technical services, registered members and suppliers nationwide.</p>
+    </div>
+
+    <form method="GET" action="{{ url_for('market_hub') }}" class="hub-search">
+      <div class="hub-search-row">
+        <div class="form-group" style="margin:0;flex:2;">
+          <label for="q" class="sr-only">Search</label>
+          <input type="search" id="q" name="q" class="form-control" value="{{ q or '' }}" placeholder="Search products, services, artisans, suppliers…">
+        </div>
+        <div class="form-group" style="margin:0;flex:1;min-width:140px;">
+          <label for="state" class="sr-only">State</label>
+          <select id="state" name="state" class="form-control">
+            <option value="">All states</option>
+            {% for s in states %}
+            <option value="{{ s }}" {% if state == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary hub-search-btn">Search hub</button>
+      </div>
+    </form>
+
+    <div class="hub-stats">
+      <span><strong>{{ product_count }}</strong> products &amp; services</span>
+      <span><strong>{{ artisan_count }}</strong> listed members</span>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="padding-top:0.5rem;">
+  <div class="container">
+    <div class="hub-tiles">
+      <a href="{{ url_for('marketplace', category='product') }}" class="hub-tile">
+        <span class="hub-tile-icon">📦</span>
+        <h3>Products</h3>
+        <p>Handmade goods, furniture, tools and more from registered artisans.</p>
+      </a>
+      <a href="{{ url_for('marketplace', category='service') }}" class="hub-tile">
+        <span class="hub-tile-icon">🔧</span>
+        <h3>Services</h3>
+        <p>Repairs, installations, fabrication and technical work near you.</p>
+      </a>
+      <a href="{{ url_for('find_artisans') }}" class="hub-tile">
+        <span class="hub-tile-icon">👷</span>
+        <h3>Find Artisan / Technician</h3>
+        <p>Search by trade, specialty and location across Nigeria.</p>
+      </a>
+      <a href="{{ url_for('find_suppliers') }}" class="hub-tile">
+        <span class="hub-tile-icon">🏭</span>
+        <h3>Parts &amp; Suppliers</h3>
+        <p>Source materials and equipment from FAATN-linked suppliers.</p>
+      </a>
+      <a href="{{ url_for('need_help') }}" class="hub-tile">
+        <span class="hub-tile-icon">🆘</span>
+        <h3>I Need Help</h3>
+        <p>Describe a problem — GATE routes you to suitable technicians.</p>
+      </a>
+      <a href="{{ url_for('institutions') }}" class="hub-tile">
+        <span class="hub-tile-icon">🏫</span>
+        <h3>Institutions</h3>
+        <p>Connect with training centres, agencies and industry partners.</p>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="padding-top:1rem;">
+  <div class="container">
+    <div class="hub-section-head">
+      <h3>Featured products &amp; services</h3>
+      <a href="{{ url_for('marketplace') }}" class="btn btn-outline btn-sm">View all marketplace</a>
+    </div>
+    {% if products %}
+    <div class="product-grid">
+      {% for p in products %}
+      <article class="product-card">
+        <a href="{{ url_for('marketplace_detail', product_id=p.id) }}" class="product-image-wrap">
+          {% if p.image_url() %}
+          <img src="{{ p.image_url() }}" alt="{{ p.title }}" class="product-image" loading="lazy">
+          {% else %}
+          <div class="product-image product-image-fallback">{{ '🔧' if p.category == 'service' else '📦' }}</div>
+          {% endif %}
+          <span class="product-badge">{{ p.category|capitalize }}</span>
+        </a>
+        <div class="product-body">
+          <h3 class="product-title"><a href="{{ url_for('marketplace_detail', product_id=p.id) }}">{{ p.title }}</a></h3>
+          {% if p.price %}<p class="product-price">{{ p.price }}</p>{% endif %}
+          <div class="product-seller">
+            <a href="{{ url_for('public_profile', user_id=p.owner.id) }}">{{ p.owner.business_name or p.owner.full_name }}</a>
+            {% if p.owner.location_state %}<span class="text-muted"> · {{ p.owner.location_state }}</span>{% endif %}
+          </div>
+          <div class="product-actions">
+            <a class="btn btn-outline btn-sm" href="{{ url_for('marketplace_detail', product_id=p.id) }}">Details</a>
+            {% if p.owner.whatsapp or p.owner.phone %}
+            <a class="btn btn-primary btn-sm" target="_blank" rel="noopener"
+               href="https://wa.me/{{ (p.owner.whatsapp or p.owner.phone)|replace('+','')|replace(' ','') }}">WhatsApp</a>
+            {% endif %}
+          </div>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" style="text-align:center;padding:1.5rem;">
+      <p>No listings match this search yet.</p>
+      {% if current_user.is_authenticated %}
+      <a class="btn btn-primary" href="{{ url_for('manage_products') }}">List your product or service</a>
+      {% else %}
+      <a class="btn btn-primary" href="{{ url_for('register') }}">Register to sell or offer services</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<section class="section" style="padding-top:0.5rem;">
+  <div class="container">
+    <div class="hub-section-head">
+      <h3>Registered artisans &amp; technicians</h3>
+      <a href="{{ url_for('find_artisans') }}" class="btn btn-outline btn-sm">Find more</a>
+    </div>
+    {% if artisans %}
+    <div class="hub-people-grid">
+      {% for m in artisans %}
+      <article class="hub-person-card">
+        <div class="hub-person-top">
+          {% if m.profile_pic %}
+          <img src="{{ url_for('static', filename='uploads/avatars/' + m.profile_pic) }}" alt="" class="hub-avatar">
+          {% else %}
+          <div class="hub-avatar hub-avatar-fallback">{{ m.full_name[0] }}</div>
+          {% endif %}
+          <div>
+            <h4><a href="{{ url_for('public_profile', user_id=m.id) }}">{{ m.full_name }}</a></h4>
+            <p class="text-muted">{{ m.occupation or m.role }}{% if m.specialty %} · {{ m.specialty }}{% endif %}</p>
+            {% if m.location_state %}<p class="text-muted" style="font-size:0.85rem;">{{ m.location_state }}</p>{% endif %}
+          </div>
+        </div>
+        <div class="product-actions">
+          <a class="btn btn-outline btn-sm" href="{{ url_for('public_profile', user_id=m.id) }}">Profile</a>
+          {% if m.whatsapp or m.phone %}
+          <a class="btn btn-primary btn-sm" target="_blank" rel="noopener"
+             href="https://wa.me/{{ (m.whatsapp or m.phone)|replace('+','')|replace(' ','') }}">WhatsApp</a>
+          {% endif %}
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted">No members match this filter.</p>
+    {% endif %}
+  </div>
+</section>
+
+{% if suppliers %}
+<section class="section" style="padding-top:0.5rem;padding-bottom:3rem;">
+  <div class="container">
+    <div class="hub-section-head">
+      <h3>Suppliers &amp; partners</h3>
+      <a href="{{ url_for('find_suppliers') }}" class="btn btn-outline btn-sm">Browse suppliers</a>
+    </div>
+    <div class="hub-people-grid">
+      {% for m in suppliers %}
+      <article class="hub-person-card">
+        <div class="hub-person-top">
+          <div class="hub-avatar hub-avatar-fallback">{{ (m.business_name or m.full_name)[0] }}</div>
+          <div>
+            <h4><a href="{{ url_for('public_profile', user_id=m.id) }}">{{ m.business_name or m.full_name }}</a></h4>
+            <p class="text-muted">{{ m.supplier_category or m.role }}</p>
+            {% if m.products_supplied %}<p class="text-muted" style="font-size:0.85rem;">{{ m.products_supplied[:100] }}{% if m.products_supplied|length > 100 %}…{% endif %}</p>{% endif %}
+          </div>
+        </div>
+        <a class="btn btn-outline btn-sm" href="{{ url_for('public_profile', user_id=m.id) }}">View</a>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}
