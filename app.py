@@ -18,14 +18,21 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'faatn-gate-secret-key-c
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 # ---------- Search-engine verification & site identity ----------
-# Paste your codes here, OR (recommended) set them as environment variables on Render:
-#   GOOGLE_SITE_VERIFICATION  -> content value of Google's <meta name="google-site-verification">
-#   BING_SITE_VERIFICATION    -> content value of Bing's <meta name="msvalidate.01">
-#   GOOGLE_HTML_FILE          -> (optional) file name Google gives you, e.g. google1234567890abcdef.html
+# Prefer environment variables on Render (recommended). Fallbacks below use the
+# real codes so verification works even if the env vars are not yet set.
+#   GOOGLE_SITE_VERIFICATION  -> <meta name="google-site-verification" content="Hv5guTDnf-PC_m39QAAzh0sFAnGKCsTG-Jr9sbKabL4" />
+#   BING_SITE_VERIFICATION    -> <meta name="msvalidate.01" content="E69E467EDBB0C6D57FFDA07288D20B4B" />
+#   GOOGLE_HTML_FILE          -> (optional) e.g. google1234567890abcdef.html
 #   BING_AUTH_CODE            -> (optional) code inside BingSiteAuth.xml
-#   PUBLIC_SITE_URL           -> https://yourdomain.ng  (used in sitemap.xml and robots.txt)
-GOOGLE_SITE_VERIFICATION = os.environ.get('GOOGLE_SITE_VERIFICATION', 'YOUR_GOOGLE_CODE').strip()
-BING_SITE_VERIFICATION = os.environ.get('BING_SITE_VERIFICATION', 'YOUR_BING_CODE').strip()
+#   PUBLIC_SITE_URL           -> https://faatn-gate.com  (used in sitemap.xml and robots.txt)
+GOOGLE_SITE_VERIFICATION = os.environ.get(
+    'GOOGLE_SITE_VERIFICATION',
+    'Hv5guTDnf-PC_m39QAAzh0sFAnGKCsTG-Jr9sbKabL4'
+).strip()
+BING_SITE_VERIFICATION = os.environ.get(
+    'BING_SITE_VERIFICATION',
+    'E69E467EDBB0C6D57FFDA07288D20B4B'
+).strip()
 GOOGLE_HTML_FILE = os.environ.get('GOOGLE_HTML_FILE', '').strip()
 BING_AUTH_CODE = os.environ.get('BING_AUTH_CODE', '').strip()
 
@@ -40,7 +47,6 @@ def inject_seo_settings():
         'bing_site_verification': real(BING_SITE_VERIFICATION),
         'canonical_base': os.environ.get('PUBLIC_SITE_URL', '').rstrip('/') or request.url_root.rstrip('/'),
     }
-
 # ---------- Database: PostgreSQL only (Render DATABASE_URL or local Postgres) ----------
 # No SQLite. Set DATABASE_URL, e.g.:
 #   postgresql://USER:PASSWORD@HOST:5432/faatn_gate
