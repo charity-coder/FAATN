@@ -1,0 +1,19 @@
+{
+  "name": "FAATN-GATE",
+  "short_name": "FAATN",
+  "icons": [
+    {
+      "src": "/static/favicon/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/favicon/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#052e16",
+  "background_color": "#052e16",
+  "display": "standalone"
+}
