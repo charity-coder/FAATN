@@ -29,9 +29,9 @@
   <meta property="og:title" content="{% block og_title %}FAATN-GATE | Gateway for Artisans &amp; Technical Experts{% endblock %}">
   <meta property="og:description" content="{% block og_description %}FAATN-GATE is the official digital platform of FAATN — connecting people, skills, innovation, opportunities, and impact for Nigerian artisans and technicians.{% endblock %}">
   <meta property="og:url" content="{% block og_url %}{{ canonical_base }}{{ request.path }}{% endblock %}">
-  <meta property="og:image" content="{% block og_image %}{{ url_for('static', filename='images/logo/faatn_logo_512.png', _external=True) }}{% endblock %}">
-  <meta property="og:image:width" content="512">
-  <meta property="og:image:height" content="512">
+  <meta property="og:image" content="{% block og_image %}{{ url_for('static', filename='images/logo/faatn_logo_256.png', _external=True) }}{% endblock %}">
+  <meta property="og:image:width" content="256">
+  <meta property="og:image:height" content="256">
   <meta property="og:image:alt" content="FAATN — Federation of Association of Artisans and Technicians of Nigeria">
   <meta property="og:locale" content="en_NG">
 
@@ -41,7 +41,7 @@
   <meta name="twitter:creator" content="@faatnigeria">
   <meta name="twitter:title" content="{% block twitter_title %}FAATN-GATE | Gateway for Artisans & Technical Experts{% endblock %}">
   <meta name="twitter:description" content="{% block twitter_description %}FAATN-GATE is the official digital platform of FAATN — connecting people, skills, innovation, opportunities, and impact for Nigerian artisans and technicians.{% endblock %}">
-  <meta name="twitter:image" content="{% block twitter_image %}{{ url_for('static', filename='images/logo/faatn_logo_512.png', _external=True) }}{% endblock %}">
+  <meta name="twitter:image" content="{% block twitter_image %}{{ url_for('static', filename='images/logo/faatn_logo_256.png', _external=True) }}{% endblock %}">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -62,9 +62,9 @@
         "url": {{ request.url_root.rstrip('/')|tojson }},
         "logo": {
           "@type": "ImageObject",
-          "url": {{ url_for('static', filename='images/logo/faatn_logo_512.png', _external=True)|tojson }}
+          "url": {{ url_for('static', filename='images/logo/faatn_logo_256.png', _external=True)|tojson }}
         },
-        "image": {{ url_for('static', filename='images/logo/faatn_logo_512.png', _external=True)|tojson }},
+        "image": {{ url_for('static', filename='images/logo/faatn_logo_256.png', _external=True)|tojson }},
         "description": "National platform for Nigerian artisans and technicians promoting indigenous technology, skills, innovation and industrial development.",
         "email": "faatnigeria@gmail.com",
         "telephone": ["+2349154968109", "+2348036771117"],
@@ -78,10 +78,10 @@
         "foundingDate": "2017",
         "identifier": "CAC/IT/103696",
         "sameAs": [
-          "https://facebook.com/faatnigeria",
+          "https://www.facebook.com/profile.php?id=61595624519691",
           "https://x.com/faatnigeria",
           "https://instagram.com/faatnigeria",
-          "https://www.linkedin.com/company/faatnigeria",
+          "https://www.linkedin.com/in/federation-of-association-of-artisans-and-technicians-of-nigeria-faatn",
           "https://youtube.com/@faatnigeria",
           "https://wa.me/2349154968109"
         ],

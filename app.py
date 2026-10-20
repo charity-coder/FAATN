@@ -25,6 +25,7 @@ app.config['TEMPLATES_AUTO_RELOAD'] = True
 #   GOOGLE_HTML_FILE          -> (optional) e.g. google1234567890abcdef.html
 #   BING_AUTH_CODE            -> (optional) code inside BingSiteAuth.xml
 #   PUBLIC_SITE_URL           -> https://faatn-gate.com  (used in sitemap.xml and robots.txt)
+
 GOOGLE_SITE_VERIFICATION = os.environ.get(
     'GOOGLE_SITE_VERIFICATION',
     'Hv5guTDnf-PC_m39QAAzh0sFAnGKCsTG-Jr9sbKabL4'
