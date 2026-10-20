@@ -3,25 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>{% block title %}FAATN-GATE{% endblock %} | Gateway for Artisans & Technical Experts</title>
+  <title>{% block title %}FAATN-GATE | Gateway for Artisans &amp; Technical Experts{% endblock %}{% block title_suffix %} | FAATN-GATE{% endblock %}</title>
 
-  <meta name="description" content="{% block meta_description %}FAATN-GATE — digital gateway of the Federation of Artisans and Technicians of Nigeria. Connecting people, skills, innovation, opportunities and impact nationwide.{% endblock %}">
-  <meta name="author" content="Federation of Artisans and Technicians of Nigeria (FAATN)">
-  <meta name="theme-color" content="#0d9488">
-  <meta name="keywords" content="FAATN, artisans, technicians, Nigeria, skills, training, innovation, FAATN-GATE">
-  <link rel="canonical" href="{% block canonical_url %}{{ request.url }}{% endblock %}">
-  <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo/faatn_logo_64.png') }}">
+  <!-- Primary SEO -->
+  <meta name="description" content="{% block meta_description %}FAATN-GATE is the official digital platform of the Federation of Association of Artisans and Technicians of Nigeria (FAATN). Register artisans and technicians, access training, innovation support, contracts, and national opportunities across Nigeria.{% endblock %}">
+  <meta name="keywords" content="{% block meta_keywords %}FAATN, FAATN-GATE, Federation of Association of Artisans and Technicians of Nigeria, Nigerian artisans, Nigerian technicians, artisan registration Nigeria, technician training Nigeria, skills development Nigeria, indigenous technology, technology transfer, renewable energy artisans, innovation commercialisation Nigeria, find artisan Nigeria, find technician Nigeria, vocational skills Nigeria, TVET partnership, local manufacturing Nigeria, CAC IT 103696{% endblock %}">
+  <meta name="author" content="Federation of Association of Artisans and Technicians of Nigeria (FAATN)">
+  <meta name="robots" content="{% block meta_robots %}index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1{% endblock %}">
+  <meta name="googlebot" content="index, follow">
+  <meta name="bingbot" content="index, follow">
+  <meta name="theme-color" content="#052e16">
+  <meta name="application-name" content="FAATN-GATE">
+  <link rel="canonical" href="{% block canonical_url %}{{ canonical_base }}{{ request.path }}{% endblock %}">
+  {% include "_favicon.html" %}
+
+  <!-- Google Search Console verification (set GOOGLE_SITE_VERIFICATION in app.py or env) -->
+  {% if google_site_verification %}<meta name="google-site-verification" content="{{ google_site_verification }}">{% endif %}
+
+  <!-- Bing Webmaster Tools verification (set BING_SITE_VERIFICATION in app.py or env) -->
+  {% if bing_site_verification %}<meta name="msvalidate.01" content="{{ bing_site_verification }}">{% endif %}
 
   <!-- Open Graph / Facebook / LinkedIn / WhatsApp -->
   <meta property="og:site_name" content="FAATN-GATE">
   <meta property="og:type" content="{% block og_type %}website{% endblock %}">
-  <meta property="og:title" content="{% block og_title %}FAATN-GATE | Gateway for Artisans & Technical Experts{% endblock %}">
-  <meta property="og:description" content="{% block og_description %}FAATN-GATE — digital gateway of the Federation of Artisans and Technicians of Nigeria. People → Skills → Innovation → Opportunities → Impact.{% endblock %}">
-  <meta property="og:url" content="{% block og_url %}{{ request.url }}{% endblock %}">
+  <meta property="og:title" content="{% block og_title %}FAATN-GATE | Gateway for Artisans &amp; Technical Experts{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}FAATN-GATE is the official digital platform of FAATN — connecting people, skills, innovation, opportunities, and impact for Nigerian artisans and technicians.{% endblock %}">
+  <meta property="og:url" content="{% block og_url %}{{ canonical_base }}{{ request.path }}{% endblock %}">
   <meta property="og:image" content="{% block og_image %}{{ url_for('static', filename='images/logo/faatn_logo_512.png', _external=True) }}{% endblock %}">
   <meta property="og:image:width" content="512">
   <meta property="og:image:height" content="512">
-  <meta property="og:image:alt" content="FAATN — Federation of Artisans and Technicians of Nigeria">
+  <meta property="og:image:alt" content="FAATN — Federation of Association of Artisans and Technicians of Nigeria">
   <meta property="og:locale" content="en_NG">
 
   <!-- Twitter / X Card -->
@@ -29,11 +40,12 @@
   <meta name="twitter:site" content="@faatnigeria">
   <meta name="twitter:creator" content="@faatnigeria">
   <meta name="twitter:title" content="{% block twitter_title %}FAATN-GATE | Gateway for Artisans & Technical Experts{% endblock %}">
-  <meta name="twitter:description" content="{% block twitter_description %}FAATN-GATE — digital gateway of the Federation of Artisans and Technicians of Nigeria. People → Skills → Innovation → Opportunities → Impact.{% endblock %}">
+  <meta name="twitter:description" content="{% block twitter_description %}FAATN-GATE is the official digital platform of FAATN — connecting people, skills, innovation, opportunities, and impact for Nigerian artisans and technicians.{% endblock %}">
   <meta name="twitter:image" content="{% block twitter_image %}{{ url_for('static', filename='images/logo/faatn_logo_512.png', _external=True) }}{% endblock %}">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Serif+Display:ital@0;1&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   {% block extra_css %}{% endblock %}
 
@@ -45,7 +57,7 @@
       {
         "@type": "Organization",
         "@id": "{{ request.url_root }}#organization",
-        "name": "Federation of Artisans and Technicians of Nigeria",
+        "name": "Federation of Association of Artisans and Technicians of Nigeria",
         "alternateName": ["FAATN", "FAATN-GATE"],
         "url": {{ request.url_root.rstrip('/')|tojson }},
         "logo": {

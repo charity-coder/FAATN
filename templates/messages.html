@@ -5,7 +5,7 @@
 <div class="topbar">
   <div>
     <h1>💬 Chat & Messages</h1>
-    <p class="text-muted">Talk with other artisans and technicians for assistance · System notifications</p>
+    <p class="text-muted">Your inbox — peer chat and official FAATN messages all land here</p>
   </div>
   <div class="topbar-actions">
     <a href="{{ url_for('directory') }}" class="btn btn-primary btn-sm">🤝 Find Members to Chat</a>
@@ -14,26 +14,35 @@
 
 <div class="dash-card">
   <div class="dash-card-header">
-    <h3>Conversations</h3>
+    <h3>Inbox</h3>
   </div>
   <div class="dash-card-body">
     {% if conversations %}
       {% for c in conversations %}
-      <div class="list-item" style="align-items:center;">
+      <div class="list-item" style="align-items:flex-start;{% if c.unread %}background:rgba(13,122,79,0.06);{% endif %}">
         <div class="list-item-icon" style="{% if c.is_system %}background:rgba(59,130,246,0.2);{% endif %}">
           {% if c.is_system %}📢{% else %}💬{% endif %}
         </div>
-        <div class="list-item-content">
+        <div class="list-item-content" style="flex:1;">
           <h4>
-            {{ c.name }}
-            {% if c.unread %}<span class="badge" style="margin-left:0.4rem;">{{ c.unread }}</span>{% endif %}
+            {% if c.last_msg.subject and c.is_system %}
+              {{ c.last_msg.subject }}
+            {% else %}
+              {{ c.name }}
+            {% endif %}
+            {% if c.unread %}<span class="badge" style="margin-left:0.4rem;">{{ c.unread }} new</span>{% endif %}
           </h4>
-          <p>{{ c.last_msg.body[:90] }}{% if c.last_msg.body|length > 90 %}…{% endif %}</p>
+          {% if c.is_system %}
+            <p class="text-muted" style="font-size:0.8rem;margin:0.15rem 0;">From: {{ c.name }}</p>
+            <p style="margin:0.35rem 0;line-height:1.5;">{{ c.last_msg.body }}</p>
+          {% else %}
+            <p>{{ c.last_msg.body[:120] }}{% if c.last_msg.body|length > 120 %}…{% endif %}</p>
+          {% endif %}
           <p class="text-muted" style="font-size:0.75rem;margin-top:0.2rem;">{{ c.last_msg.created_at.strftime('%d %b %Y · %H:%M') }}</p>
         </div>
         <div>
           {% if c.is_system %}
-            <span class="status-pill status-pending">System</span>
+            <span class="status-pill status-pending">Inbox</span>
           {% elif c.user %}
             <a href="{{ url_for('chat', user_id=c.user.id) }}" class="btn btn-primary btn-sm">Open Chat</a>
           {% endif %}
@@ -43,7 +52,7 @@
     {% else %}
       <div class="empty-state">
         <div class="icon">💬</div>
-        <p>No conversations yet.</p>
+        <p>No messages in your inbox yet.</p>
         <a href="{{ url_for('directory') }}" class="btn btn-primary btn-sm mt-2">Find Members to Chat</a>
       </div>
     {% endif %}

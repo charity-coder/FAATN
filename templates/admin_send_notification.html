@@ -1,0 +1,84 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Send Notification{% endblock %}
+
+{% block dashboard_content %}
+<section class="admin-overview-section">
+<div class="topbar">
+  <div>
+    <h1>Send Notification to Artisans</h1>
+    <p class="admin-mix-line">
+      Broadcast a message to artisans / technicians.
+      Use a keyword (e.g. <strong>massage</strong>) to reach only those whose
+      occupation, specialty, skills or needs match.
+    </p>
+  </div>
+</div>
+
+<div class="dash-card" style="max-width:720px;">
+  <div class="dash-card-header"><h3>Compose notification</h3></div>
+  <div class="dash-card-body">
+    <form method="POST" action="{{ url_for('admin_send_notification') }}">
+      <div class="form-group" style="margin-bottom:1rem;">
+        <label for="title"><strong>Title</strong></label>
+        <input type="text" id="title" name="title" class="form-control" required
+               maxlength="150" placeholder="e.g. Massage / Wellness Opportunity">
+      </div>
+
+      <div class="form-group" style="margin-bottom:1rem;">
+        <label for="message"><strong>Message</strong></label>
+        <textarea id="message" name="message" class="form-control" rows="5" required
+                  placeholder="Write the full notification text here…"></textarea>
+      </div>
+
+      <div class="form-group" style="margin-bottom:1rem;">
+        <label for="keyword"><strong>Keyword filter</strong> (optional)</label>
+        <input type="text" id="keyword" name="keyword" class="form-control"
+               placeholder="e.g. massage  — leave empty to notify all artisans/technicians">
+        <small class="text-muted">Matches occupation, specialty, skills or needs (case-insensitive).</small>
+      </div>
+
+      <div class="form-group" style="margin-bottom:1rem;">
+        <label for="target_role"><strong>Role</strong></label>
+        <select id="target_role" name="target_role" class="form-control">
+          <option value="all">All artisans, technicians &amp; engineers</option>
+          <option value="artisan">Artisans only</option>
+          <option value="technician">Technicians only</option>
+          <option value="engineer">Engineers only</option>
+        </select>
+      </div>
+
+      <div class="form-group" style="margin-bottom:1.25rem;">
+        <label for="type"><strong>Type</strong></label>
+        <select id="type" name="type" class="form-control">
+          <option value="info">Info</option>
+          <option value="opportunity" selected>Opportunity</option>
+          <option value="training">Training</option>
+          <option value="success">Success</option>
+          <option value="warning">Warning</option>
+        </select>
+      </div>
+
+      <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+        <button type="submit" class="btn btn-primary">Send Notification</button>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="dash-card" style="margin-top:1.5rem;max-width:720px;">
+  <div class="dash-card-header"><h3>Quick tip — Massage interest</h3></div>
+  <div class="dash-card-body">
+    <p style="margin:0 0 0.75rem;">
+      To reach artisans interested in massage / wellness services, enter
+      <code>massage</code> as the keyword. This will include anyone with
+      occupation “Massage Therapist”, “Spa / Wellness Therapist”, or who
+      listed massage in specialty / skills / needs.
+    </p>
+    <p style="margin:0;color:#64748b;font-size:0.9rem;">
+      Occupations now include: Massage Therapist, Spa / Wellness Therapist, Beauty Therapist.
+    </p>
+  </div>
+</div>
+</section>
+{% endblock %}

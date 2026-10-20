@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ member.occupation or member.role }} — {{ member.location_state or 'Nigeria' }} | FAATN-GATE{% endblock %}
+{% block title %}{{ member.occupation or member.role }} — {{ member.location_state or 'Nigeria' }}{% endblock %}
 {% block meta_description %}FAATN-GATE — {{ member.occupation or member.role }} in {{ member.location_community or '' }} {{ member.location_state or 'Nigeria' }}. {{ member.listing_label }}.{% endblock %}
 {% block og_title %}FAATN-GATE — {{ member.occupation or member.full_name }} — {{ member.location_state or 'Nigeria' }}{% endblock %}
 {% block content %}
@@ -34,6 +34,9 @@
            href="https://wa.me/{{ (member.whatsapp or member.phone)|replace('+','')|replace(' ','') }}">WhatsApp</a>
         {% endif %}
         {% if member.email %}<a class="btn btn-outline btn-sm" href="mailto:{{ member.email }}">Email</a>{% endif %}
+        {% if current_user.is_authenticated and current_user.id != member.id %}
+        <a class="btn btn-primary btn-sm" href="{{ url_for('chat', user_id=member.id) }}">💬 Message (inbox)</a>
+        {% endif %}
         <a class="btn btn-outline btn-sm" href="{{ url_for('need_help') }}">Request Service</a>
         <a class="btn btn-outline btn-sm" target="_blank" rel="noopener"
            href="https://www.google.com/maps/search/?api=1&amp;query={{ ((member.location_community or '') ~ ' ' ~ (member.location_lga or '') ~ ' ' ~ (member.location_state or '') ~ ' Nigeria')|urlencode }}">Directions (Google Maps)</a>

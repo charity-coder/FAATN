@@ -1,0 +1,13 @@
+{
+  "name": "FAATN-GATE",
+  "short_name": "FAATN",
+  "description": "Gateway for Artisans & Technical Experts",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#052e16",
+  "theme_color": "#052e16",
+  "icons": [
+    { "src": "/static/favicon/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/static/favicon/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

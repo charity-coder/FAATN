@@ -39,6 +39,11 @@
   --radius: 16px;
   --radius-sm: 12px;
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Typography — Montserrat · DM Serif Display · DM Sans */
+  --font-body: 'DM Sans', sans-serif;
+  --font-display: 'DM Serif Display', serif;
+  --font-ui: 'Montserrat', sans-serif;
 }
 
 *, *::before, *::after {
@@ -52,12 +57,44 @@ html {
 }
 
 body {
-  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1.0625rem; /* 17px — bolder base */
+  font-weight: 500;
   background: transparent;
   color: var(--text);
-  line-height: 1.65;
+  line-height: 1.7;
   min-height: 100vh;
   overflow-x: hidden;
+}
+
+/* Justify long write-ups / body copy */
+p,
+.dash-card-body,
+.dash-card-body p,
+.vmc-content p,
+.article-body,
+.event-body,
+.msg-body,
+.about-body,
+.section-band p,
+.list-item-content p,
+.card-3d p,
+.gate-card p,
+.module-card p {
+  text-align: justify;
+  text-justify: inter-word;
+  hyphens: auto;
+}
+
+/* Short centered intros stay centered */
+.section-header,
+.auth-header {
+  text-align: center;
+}
+.section-header p,
+.auth-header p,
+.hero p {
+  text-align: center;
 }
 
 /* ---------- Animated 3D Background ---------- */
@@ -115,11 +152,40 @@ body {
   66% { transform: translate(-20px, 20px) rotate(-5deg); }
 }
 
-/* ---------- Typography ---------- */
+/* ---------- Typography (bolder sizes) ---------- */
 h1, h2, h3, h4, h5 {
-  font-weight: 700;
+  font-family: 'DM Serif Display', serif;
+  font-weight: 400;
   letter-spacing: -0.02em;
-  line-height: 1.25;
+  line-height: 1.2;
+}
+
+h1 { font-size: clamp(2rem, 4.5vw, 3rem); }
+h2 { font-size: clamp(1.65rem, 3.5vw, 2.35rem); }
+h3 { font-size: clamp(1.35rem, 2.5vw, 1.75rem); }
+h4 { font-size: 1.25rem; }
+h5 { font-size: 1.1rem; }
+
+.logo,
+.logo-text,
+.nav-links a,
+.btn,
+.sidebar a,
+.sidebar .nav-item,
+label,
+.form-control,
+input,
+select,
+textarea,
+.stat-card,
+.status-pill,
+.badge {
+  font-family: 'Montserrat', sans-serif;
+}
+
+.nav-links a {
+  font-weight: 600;
+  font-size: 1rem;
 }
 
 .gradient-text {
@@ -188,7 +254,7 @@ h1, h2, h3, h4, h5 {
 }
 
 .logo-text {
-  font-size: clamp(1rem, 2.5vw, 1.35rem);
+  font-size: clamp(1.1rem, 2.5vw, 1.5rem);
   font-weight: 800;
   letter-spacing: -0.03em;
   white-space: nowrap;
@@ -233,10 +299,10 @@ h1, h2, h3, h4, h5 {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.7rem 1.4rem;
+  padding: 0.85rem 1.6rem;
   border-radius: 12px;
-  font-weight: 600;
-  font-size: 0.95rem;
+  font-weight: 700;
+  font-size: 1.05rem;
   text-decoration: none;
   border: none;
   cursor: pointer;
@@ -277,8 +343,9 @@ h1, h2, h3, h4, h5 {
 }
 
 .btn-sm {
-  padding: 0.45rem 1rem;
-  font-size: 0.85rem;
+  padding: 0.55rem 1.15rem;
+  font-size: 0.95rem;
+  font-weight: 700;
 }
 
 .btn-block {
@@ -319,16 +386,18 @@ h1, h2, h3, h4, h5 {
 }
 
 .hero h1 {
-  font-size: clamp(2.4rem, 5vw, 3.6rem);
+  font-size: clamp(2.75rem, 6vw, 4.25rem);
   margin-bottom: 1.25rem;
+  font-weight: 400;
 }
 
 .hero p {
-  font-size: 1.15rem;
+  font-size: 1.25rem;
+  font-weight: 500;
   color: #e2e8f0;
-  max-width: 540px;
+  max-width: 560px;
   margin-bottom: 2rem;
-  line-height: 1.7;
+  line-height: 1.75;
 }
 .hero p strong {
   color: #ffffff;
@@ -450,13 +519,14 @@ h1, h2, h3, h4, h5 {
 }
 
 .section-header h2 {
-  font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+  font-size: clamp(2rem, 4vw, 2.85rem);
   margin-bottom: 1rem;
 }
 
 .section-header p {
   color: var(--text-muted);
-  font-size: 1.05rem;
+  font-size: 1.15rem;
+  font-weight: 500;
 }
 
 /* ---------- Gate Entry Cards (3D) ---------- */
@@ -603,7 +673,7 @@ h1, h2, h3, h4, h5 {
 }
 
 .auth-header h1 {
-  font-size: 1.75rem;
+  font-size: 2.1rem;
   margin-bottom: 0.5rem;
 }
 
@@ -800,7 +870,7 @@ select.form-control {
 }
 
 .topbar h1 {
-  font-size: 1.6rem;
+  font-size: 1.85rem;
 }
 
 .topbar-actions {
@@ -1119,7 +1189,7 @@ body.nav-open {
   .gate-grid { grid-template-columns: 1fr 1fr; gap: 1rem; }
   .section { padding: 3rem 1rem; }
   .hero { padding: 6.5rem 1rem 3rem; min-height: auto; }
-  .hero h1 { font-size: clamp(1.75rem, 7vw, 2.4rem); }
+  .hero h1 { font-size: clamp(2.1rem, 8vw, 2.85rem); }
   .auth-page { padding: 5.5rem 1rem 2rem; }
   .auth-card { padding: 1.5rem; border-radius: 18px; transform: none; }
   .auth-card.wide { max-width: 100%; }

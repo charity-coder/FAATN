@@ -17,6 +17,30 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'faatn-gate-secret-key-change-in-production-2026')
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 
+# ---------- Search-engine verification & site identity ----------
+# Paste your codes here, OR (recommended) set them as environment variables on Render:
+#   GOOGLE_SITE_VERIFICATION  -> content value of Google's <meta name="google-site-verification">
+#   BING_SITE_VERIFICATION    -> content value of Bing's <meta name="msvalidate.01">
+#   GOOGLE_HTML_FILE          -> (optional) file name Google gives you, e.g. google1234567890abcdef.html
+#   BING_AUTH_CODE            -> (optional) code inside BingSiteAuth.xml
+#   PUBLIC_SITE_URL           -> https://yourdomain.ng  (used in sitemap.xml and robots.txt)
+GOOGLE_SITE_VERIFICATION = os.environ.get('GOOGLE_SITE_VERIFICATION', 'YOUR_GOOGLE_CODE').strip()
+BING_SITE_VERIFICATION = os.environ.get('BING_SITE_VERIFICATION', 'YOUR_BING_CODE').strip()
+GOOGLE_HTML_FILE = os.environ.get('GOOGLE_HTML_FILE', '').strip()
+BING_AUTH_CODE = os.environ.get('BING_AUTH_CODE', '').strip()
+
+
+@app.context_processor
+def inject_seo_settings():
+    """Make verification codes available to every template (only real codes are rendered)."""
+    def real(code):
+        return code if code and not code.startswith('YOUR_') else ''
+    return {
+        'google_site_verification': real(GOOGLE_SITE_VERIFICATION),
+        'bing_site_verification': real(BING_SITE_VERIFICATION),
+        'canonical_base': os.environ.get('PUBLIC_SITE_URL', '').rstrip('/') or request.url_root.rstrip('/'),
+    }
+
 # ---------- Database: PostgreSQL only (Render DATABASE_URL or local Postgres) ----------
 # No SQLite. Set DATABASE_URL, e.g.:
 #   postgresql://USER:PASSWORD@HOST:5432/faatn_gate
@@ -102,6 +126,9 @@ OCCUPATIONS = [
     'Tiler',
     'Generator Technician',
     'ICT / Computer Technician',
+    'Massage Therapist',
+    'Spa / Wellness Therapist',
+    'Beauty Therapist',
     'Other',
 ]
 
@@ -520,11 +547,300 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
+def deliver_to_inbox(recipient_id, body, subject=None, sender_id=None, sender_name=None,
+                     image_filename=None, notif_title=None, notif_type='info', commit=True):
+    """Always put a message in the recipient's Messages inbox and create a notification.
+
+    Used for peer chat, admin broadcasts, and system messages so artisans /
+    technicians / anyone messaged sees it under Dashboard → Messages.
+    """
+    if sender_name is None and sender_id:
+        sender = User.query.get(sender_id)
+        sender_name = sender.full_name if sender else 'Member'
+    if sender_name is None:
+        sender_name = 'FAATN System'
+
+    msg = Message(
+        recipient_id=recipient_id,
+        sender_id=sender_id,
+        sender_name=sender_name,
+        subject=subject or f'Message from {sender_name}',
+        body=body or ('[Image]' if image_filename else ''),
+        image_filename=image_filename,
+    )
+    db.session.add(msg)
+
+    preview = (body or '')[:120]
+    if body and len(body) > 120:
+        preview += '…'
+    if not preview and image_filename:
+        preview = 'Sent an image'
+
+    notif = Notification(
+        user_id=recipient_id,
+        title=notif_title or f'New message from {sender_name}',
+        message=preview or subject or 'You have a new message in your inbox.',
+        type=notif_type,
+    )
+    db.session.add(notif)
+
+    if commit:
+        db.session.commit()
+    return msg
+
+
 # ==================== ROUTES ====================
 
 @app.route('/')
 def index():
     return render_template('index.html')
+
+
+@app.route('/robots.txt')
+def robots_txt():
+    """Search-engine robots file (Google, Bing, etc.)."""
+    lines = [
+        'User-agent: *',
+        'Allow: /',
+        'Disallow: /dashboard',
+        'Disallow: /login',
+        'Disallow: /register',
+        'Disallow: /forgot-password',
+        'Disallow: /reset-password/',
+        'Disallow: /verify-email/',
+        '',
+        'User-agent: Googlebot',
+        'Allow: /',
+        '',
+        'User-agent: bingbot',
+        'Allow: /',
+        '',
+    ]
+    site = os.environ.get('PUBLIC_SITE_URL', '').rstrip('/') or request.url_root.rstrip('/')
+    lines.append(f'Sitemap: {site}/sitemap.xml')
+    lines.append('')
+    return app.response_class('\n'.join(lines), mimetype='text/plain')
+
+
+@app.route('/sitemap.xml')
+def sitemap_xml():
+    """Sitemap for Google Search Console and Bing Webmaster Tools."""
+    site = os.environ.get('PUBLIC_SITE_URL', '').rstrip('/') or request.url_root.rstrip('/')
+    pages = [
+        ('index', 1.0, 'daily'),
+        ('about', 0.8, 'monthly'),
+        ('gate', 0.8, 'monthly'),
+        ('contact', 0.6, 'monthly'),
+        ('marketplace', 0.8, 'daily'),
+        ('events_news_public', 0.7, 'daily'),
+        ('gallery_public', 0.6, 'weekly'),
+    ]
+    urls = []
+    for endpoint, priority, freq in pages:
+        try:
+            urls.append((site + url_for(endpoint), None, freq, priority))
+        except Exception:
+            continue
+    try:
+        for ev in Event.query.order_by(Event.created_at.desc()).limit(500).all():
+            lastmod = ev.created_at.strftime('%Y-%m-%d') if ev.created_at else None
+            urls.append((site + url_for('events_news_detail', event_id=ev.id), lastmod, 'monthly', 0.5))
+    except Exception:
+        pass
+    try:
+        for (ts, ls), n in _seo_counts().items():
+            if n > 0:
+                slug = ts if ls is None else f'{ts}-in-{ls}'
+                urls.append((site + url_for('seo_landing', slug=slug), None, 'weekly', 0.8 if ls else 0.7))
+    except Exception:
+        pass
+    try:
+        urls.append((site + url_for('find_artisans'), None, 'daily', 0.9))
+    except Exception:
+        pass
+    xml = ['<?xml version="1.0" encoding="UTF-8"?>',
+           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for loc, lastmod, freq, priority in urls:
+        xml.append('  <url>')
+        xml.append(f'    <loc>{loc}</loc>')
+        if lastmod:
+            xml.append(f'    <lastmod>{lastmod}</lastmod>')
+        xml.append(f'    <changefreq>{freq}</changefreq>')
+        xml.append(f'    <priority>{priority}</priority>')
+        xml.append('  </url>')
+    xml.append('</urlset>')
+    return app.response_class('\n'.join(xml), mimetype='application/xml')
+
+
+
+# ==================== SEO LANDING PAGES (trade x location) ====================
+# URLs look like /electricians-in-abuja, /solar-installers-in-lagos, /electricians (nationwide).
+# Add or remove entries here; sitemap, links and pages update automatically.
+# slug: (occupation stored in DB, plural label, singular label, what they do, what to check)
+SEO_TRADES = {
+    'electricians': ('Electrician', 'Electricians', 'electrician',
+                     'wiring, rewiring, fault finding, distribution boards, lighting and inverter or generator changeover installation',
+                     'Ask about previous wiring jobs, whether they use properly rated cables and breakers, and whether they will test the installation before handover.'),
+    'plumbers': ('Plumber', 'Plumbers', 'plumber',
+                 'pipe installation, leak repair, water tank and pump connections, bathroom fittings and drainage',
+                 'Agree the scope and materials list up front, and ask whether pipe and fitting costs are included in the quote.'),
+    'welders': ('Welder / Fabricator', 'Welders & Fabricators', 'welder or fabricator',
+                'gates, burglar proofing, roofing frames, tanks stands, trailers and general metal fabrication',
+                'Ask to see finished work, agree the steel gauge and finish (primer or paint), and confirm the delivery timeline.'),
+    'solar-installers': ('Solar Technician', 'Solar Installers', 'solar technician',
+                         'solar panel, inverter and battery installation, solar pumps, system sizing and maintenance',
+                         'Request a written load calculation, brand and warranty details for panels, inverter and batteries, and ask who handles after-install faults.'),
+    'ac-technicians': ('Refrigeration / AC Technician', 'AC & Refrigeration Technicians', 'AC or refrigeration technician',
+                       'air-conditioner installation, gas refilling, servicing, cold-room and refrigerator repair',
+                       'Ask for a diagnosis before gas refilling, and confirm whether replacement parts carry any warranty.'),
+    'auto-mechanics': ('Automobile Mechanic', 'Auto Mechanics', 'automobile mechanic',
+                       'engine repair, servicing, brakes, suspension, electrical faults and diagnostics',
+                       'Get a written estimate, ask for replaced parts to be shown to you, and confirm whether the repair is guaranteed.'),
+    'generator-technicians': ('Generator Technician', 'Generator Technicians', 'generator technician',
+                              'generator servicing, overhaul, AVR and carburettor repair, and installation',
+                              'Ask about the generator brand experience, whether spare parts are genuine, and how long the repair should take.'),
+    'carpenters': ('Carpenter', 'Carpenters', 'carpenter',
+                   'doors, wardrobes, roofing timber, furniture and fittings',
+                   'Agree the wood type, design drawings and a payment schedule tied to progress.'),
+    'tilers': ('Tiler', 'Tilers', 'tiler',
+               'floor and wall tiling, screeding, grouting and finishing',
+               'Confirm who supplies tiles and adhesive, the measured area, and whether the price is per square metre.'),
+    'painters': ('Painter', 'Painters', 'painter',
+                 'interior and exterior painting, screeding, POP finishing and surface preparation',
+                 'Agree the paint brand, number of coats and whether surface preparation is included.'),
+    'masons': ('Mason', 'Masons & Bricklayers', 'mason',
+               'block laying, plastering, foundations, fencing and general building work',
+               'Agree the scope per stage, who supplies materials, and inspect completed stages before releasing payment.'),
+    'borehole-technicians': ('Borehole Technician', 'Borehole Technicians', 'borehole technician',
+                             'borehole drilling, pump installation, water treatment and pump repair',
+                             'Ask for the drilling depth, casing and pump specification in writing, and check for a water-yield or workmanship guarantee.'),
+}
+
+# slug: (state value stored in DB, display name)
+SEO_LOCATIONS = {
+    'abuja': ('FCT', 'Abuja'),
+    'lagos': ('Lagos', 'Lagos'),
+    'port-harcourt': ('Rivers', 'Port Harcourt'),
+    'kano': ('Kano', 'Kano'),
+    'ibadan': ('Oyo', 'Ibadan'),
+    'enugu': ('Enugu', 'Enugu'),
+    'owerri': ('Imo', 'Owerri'),
+    'onitsha': ('Anambra', 'Onitsha'),
+    'kaduna': ('Kaduna', 'Kaduna'),
+    'benin-city': ('Edo', 'Benin City'),
+    'asaba': ('Delta', 'Asaba'),
+    'uyo': ('Akwa Ibom', 'Uyo'),
+}
+
+SEO_LISTED = ['registered', 'verified', 'accredited', 'partner']
+
+
+def _seo_parse(slug):
+    """Return (trade_slug, location_slug|None) for a landing slug, or None."""
+    if slug in SEO_TRADES:
+        return slug, None
+    if '-in-' in slug:
+        t, l = slug.split('-in-', 1)
+        if t in SEO_TRADES and l in SEO_LOCATIONS:
+            return t, l
+    return None
+
+
+def _seo_listed_query(trade_slug, loc_slug=None):
+    occupation = SEO_TRADES[trade_slug][0]
+    q = User.query.filter(
+        User.role.in_(['artisan', 'technician', 'engineer']),
+        User.listing_category.in_(SEO_LISTED),
+        User.occupation.ilike(f'%{occupation}%'),
+    )
+    if loc_slug:
+        q = q.filter(User.location_state.ilike(f'%{SEO_LOCATIONS[loc_slug][0]}%'))
+    return q
+
+
+def _seo_counts():
+    """{(trade_slug, loc_slug|None): n} for every combination, in one query."""
+    rows = User.query.with_entities(User.occupation, User.location_state).filter(
+        User.role.in_(['artisan', 'technician', 'engineer']),
+        User.listing_category.in_(SEO_LISTED),
+    ).all()
+    counts = {}
+    for occ, st in rows:
+        occ_l, st_l = (occ or '').lower(), (st or '').lower()
+        for ts, (db_occ, *_rest) in SEO_TRADES.items():
+            if db_occ.lower() not in occ_l:
+                continue
+            counts[(ts, None)] = counts.get((ts, None), 0) + 1
+            for ls, (db_st, _name) in SEO_LOCATIONS.items():
+                if db_st.lower() in st_l:
+                    counts[(ts, ls)] = counts.get((ts, ls), 0) + 1
+    return counts
+
+
+@app.route('/<slug>')
+def seo_landing(slug):
+    """Trade / location landing pages, e.g. /electricians-in-abuja."""
+    from flask import abort
+    parsed = _seo_parse(slug)
+    if not parsed:
+        abort(404)
+    trade_slug, loc_slug = parsed
+    db_occ, plural, singular, does, check = SEO_TRADES[trade_slug]
+    place = SEO_LOCATIONS[loc_slug][1] if loc_slug else 'Nigeria'
+    members = _seo_listed_query(trade_slug, loc_slug).order_by(
+        User.listing_category.desc(), User.full_name).limit(24).all()
+    counts = _seo_counts()
+    total = counts.get((trade_slug, loc_slug), 0)
+
+    # Related links: same trade in other cities, other trades in this city
+    other_places = [(ls, SEO_LOCATIONS[ls][1]) for ls in SEO_LOCATIONS if ls != loc_slug]
+    other_trades = [(ts, SEO_TRADES[ts][1]) for ts in SEO_TRADES if ts != trade_slug]
+
+    find_params = {'occupation': db_occ}
+    if loc_slug:
+        find_params['state'] = SEO_LOCATIONS[loc_slug][0]
+
+    return render_template(
+        'seo_landing.html',
+        trade_slug=trade_slug, loc_slug=loc_slug,
+        plural=plural, singular=singular, does=does, check=check,
+        place=place, members=members, total=total,
+        other_places=other_places, other_trades=other_trades,
+        find_params=find_params,
+        # Thin pages stay out of the index until at least one member is listed
+        noindex=(total == 0),
+    )
+
+
+@app.route('/favicon.ico')
+def favicon_ico():
+    """Browsers and crawlers request /favicon.ico by default."""
+    return app.send_static_file('favicon/favicon.ico')
+
+
+@app.route('/site.webmanifest')
+def site_webmanifest():
+    return app.send_static_file('favicon/site.webmanifest')
+
+
+@app.route('/<path:filename>.html')
+def google_html_verification(filename):
+    """Serves Google's HTML-file verification (set GOOGLE_HTML_FILE=googleXXXX.html)."""
+    full = filename + '.html'
+    if GOOGLE_HTML_FILE and full == GOOGLE_HTML_FILE:
+        return app.response_class('google-site-verification: ' + GOOGLE_HTML_FILE, mimetype='text/html')
+    from flask import abort
+    abort(404)
+
+
+@app.route('/BingSiteAuth.xml')
+def bing_site_auth():
+    """Serves Bing's XML-file verification (set BING_AUTH_CODE=your-code)."""
+    if not BING_AUTH_CODE:
+        from flask import abort
+        abort(404)
+    xml = ('<?xml version="1.0"?>\n<users>\n\t<user>' + BING_AUTH_CODE + '</user>\n</users>')
+    return app.response_class(xml, mimetype='application/xml')
 
 
 @app.route('/about')
@@ -1711,23 +2027,27 @@ def directory():
 @app.route('/dashboard/messages')
 @login_required
 def messages():
-    """Inbox: conversations list (peer + system)."""
+    """Inbox: every message sent to this user appears here (peer + system/admin)."""
     # Incoming
     incoming = Message.query.filter_by(recipient_id=current_user.id).order_by(Message.created_at.desc()).all()
     # Outgoing peer messages
     outgoing = Message.query.filter_by(sender_id=current_user.id).order_by(Message.created_at.desc()).all()
 
     # Build unique conversation partners
+    # System/admin messages group by sender_name so each broadcast is readable in inbox
     partners = {}
     for m in incoming:
-        key = m.sender_id if m.sender_id else f'system-{m.id}'
+        if m.sender_id:
+            key = f'user-{m.sender_id}'
+        else:
+            key = f'system-{(m.sender_name or "System").strip()}'
         if key not in partners:
             partners[key] = {
                 'user': m.sender if m.sender_id else None,
                 'name': m.sender_name or 'System',
                 'last_msg': m,
                 'unread': 0,
-                'is_system': m.sender_id is None
+                'is_system': m.sender_id is None,
             }
         if not m.is_read:
             partners[key]['unread'] += 1
@@ -1735,7 +2055,7 @@ def messages():
             partners[key]['last_msg'] = m
 
     for m in outgoing:
-        key = m.recipient_id
+        key = f'user-{m.recipient_id}'
         if key not in partners:
             recipient = User.query.get(m.recipient_id)
             partners[key] = {
@@ -1743,10 +2063,16 @@ def messages():
                 'name': recipient.full_name if recipient else 'Unknown',
                 'last_msg': m,
                 'unread': 0,
-                'is_system': False
+                'is_system': False,
             }
         if m.created_at > partners[key]['last_msg'].created_at:
             partners[key]['last_msg'] = m
+
+    # Opening inbox marks all received messages as read
+    for m in incoming:
+        if not m.is_read:
+            m.is_read = True
+    db.session.commit()
 
     # Sort by last message time
     conv_list = sorted(partners.values(), key=lambda x: x['last_msg'].created_at, reverse=True)
@@ -1773,25 +2099,18 @@ def chat(user_id):
             file.save(os.path.join(app.config['CHAT_UPLOAD_FOLDER'], image_filename))
 
         if body or image_filename:
-            msg = Message(
+            # Deliver to recipient's Messages inbox + notification
+            deliver_to_inbox(
                 recipient_id=other.id,
+                body=body,
+                subject=f'Chat with {current_user.full_name}',
                 sender_id=current_user.id,
                 sender_name=current_user.full_name,
-                subject=f'Chat with {current_user.full_name}',
-                body=body or ('[Image]' if image_filename else ''),
-                image_filename=image_filename
+                image_filename=image_filename,
+                notif_title=f'New message from {current_user.full_name}',
+                notif_type='info',
             )
-            db.session.add(msg)
-            preview = body[:120] if body else 'Sent an image'
-            notif = Notification(
-                user_id=other.id,
-                title=f'New message from {current_user.full_name}',
-                message=preview + ('…' if body and len(body) > 120 else ''),
-                type='info'
-            )
-            db.session.add(notif)
-            db.session.commit()
-            flash('Message sent.', 'success')
+            flash('Message sent to their inbox.', 'success')
             return redirect(url_for('chat', user_id=other.id))
         else:
             flash('Write a message or attach an image.', 'danger')
@@ -1918,6 +2237,75 @@ def set_listing_category(user_id):
     flash(f'{user.full_name} is now marked: {LISTING_CATEGORIES[cat]}.', 'success')
     return redirect(url_for('admin_dashboard'))
 
+
+@app.route('/dashboard/admin/send-notification', methods=['GET', 'POST'])
+@admin_required
+def admin_send_notification():
+    """Admin broadcasts a notification to artisans / technicians.
+    Optional keyword filters by occupation, specialty or skills
+    (e.g. keyword='massage' reaches Massage Therapist and anyone
+    who listed massage interest).
+    """
+    if request.method == 'POST':
+        title = (request.form.get('title') or '').strip()
+        message = (request.form.get('message') or '').strip()
+        notif_type = (request.form.get('type') or 'info').strip()
+        keyword = (request.form.get('keyword') or '').strip().lower()
+        target_role = (request.form.get('target_role') or 'all').strip().lower()
+
+        if not title or not message:
+            flash('Title and message are required.', 'danger')
+            return redirect(url_for('admin_send_notification'))
+
+        allowed_types = {'info', 'success', 'warning', 'opportunity', 'training'}
+        if notif_type not in allowed_types:
+            notif_type = 'info'
+
+        q = User.query.filter(User.role.in_(['artisan', 'technician', 'engineer']))
+        if target_role in ('artisan', 'technician', 'engineer'):
+            q = q.filter(User.role == target_role)
+
+        if keyword:
+            like = f'%{keyword}%'
+            q = q.filter(
+                db.or_(
+                    User.occupation.ilike(like),
+                    User.specialty.ilike(like),
+                    User.skills.ilike(like),
+                    User.needs.ilike(like),
+                )
+            )
+
+        recipients = q.all()
+        count = 0
+        for u in recipients:
+            # Goes to Messages inbox AND Notifications
+            deliver_to_inbox(
+                recipient_id=u.id,
+                body=message,
+                subject=title,
+                sender_id=None,
+                sender_name='FAATN Admin',
+                notif_title=title,
+                notif_type=notif_type,
+                commit=False,
+            )
+            count += 1
+        db.session.commit()
+
+        flash(
+            f'Message delivered to {count} inbox(es)'
+            + (f' matching “{keyword}”' if keyword else '') + '.',
+            'success',
+        )
+        return redirect(url_for('admin_dashboard'))
+
+    return render_template(
+        'admin_send_notification.html',
+        occupations=OCCUPATIONS,
+    )
+
+
 @app.route('/dashboard/admin/db-metrics')
 @admin_required
 def admin_db_metrics():
@@ -1933,9 +2321,10 @@ def seed_data():
     if User.query.filter_by(email='admin@faatn.ng').first():
         return
 
-    # Admin
+    # Admin — password from env so it is never published on the website or in docs
+    admin_password = os.environ.get('ADMIN_PASSWORD', 'change-me-on-first-login')
     admin = User(
-        email='admin@faatn.ng',
+        email=os.environ.get('ADMIN_EMAIL', 'admin@faatn.ng'),
         full_name='FAATN Administrator',
         role='admin',
         location_state='FCT',
@@ -1944,7 +2333,7 @@ def seed_data():
         email_verified=True,
         listing_category='verified',
     )
-    admin.set_password('Admin@FAATN2026')
+    admin.set_password(admin_password)
     db.session.add(admin)
 
     # Demo Artisan

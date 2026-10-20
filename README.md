@@ -17,7 +17,7 @@ Official digital gateway of the Federation of Artisans and Technicians of Nigeri
 | Accent Teal      | `#0d9488` | Theme colour, highlights      |
 | Nigeria Green    | `#15803d` | National identity accents     |
 
-Glassmorphism cards, soft shadows, Inter font, and the rotating workshop background imagery are core to the look — do not replace them with a flat redesign.
+Glassmorphism cards, soft shadows, and fonts (DM Sans body · DM Serif Display headings · Montserrat UI), plus the rotating workshop background imagery, are core to the look — do not replace them with a flat redesign.
 
 ---
 
@@ -42,24 +42,14 @@ Glassmorphism cards, soft shadows, Inter font, and the rotating workshop backgro
 - SQLite for local preview (automatic when `DATABASE_URL` is unset)
 - PostgreSQL for production (`DATABASE_URL=postgresql://...`)
 - Flask-Login + Werkzeug password hashing
-- Seeded demo accounts
-
----
-
-## Demo logins
-
-| Role        | Email              | Password        |
-|-------------|--------------------|-----------------|
-| Artisan     | artisan@demo.ng    | Artisan@123     |
-| Technician  | tech@demo.ng       | Tech@123        |
-| Admin       | admin@faatn.ng     | Admin@FAATN2026 |
+- Seed data for local development (credentials are **not** published on the website)
 
 ---
 
 ## How to run (local)
 
 ```bash
-cd faatn_gate_clean
+cd FAATN_CORRECTED
 python3 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
@@ -73,9 +63,14 @@ Optional environment variables:
 ```bash
 export SECRET_KEY="your-production-secret"
 export DATABASE_URL="postgresql://user:pass@host:5432/faatn_gate"
+export ADMIN_EMAIL="admin@yourdomain.ng"       # used only when seeding first admin
+export ADMIN_PASSWORD="your-strong-password"   # never shown on the website
 export PORT=5000
 export FLASK_DEBUG=1
 ```
+
+Admin credentials are **not** displayed on the login page or any public page.
+Set `ADMIN_EMAIL` / `ADMIN_PASSWORD` before the first run so the seed creates your private admin account.
 
 ---
 
@@ -119,3 +114,22 @@ Do **not** replace the green/teal/blue system or the glass card style with a gen
 - Use PostgreSQL via `DATABASE_URL`.
 - Run behind Gunicorn: `gunicorn -b 0.0.0.0:5000 app:app`
 - Configure uploads folder persistence (avatars, gallery, events).
+
+
+---
+
+## SEO & Search Console (Google / Bing)
+
+Meta **description**, **keywords**, and verification tags are in `templates/base.html`.
+
+1. **Google Search Console** — https://search.google.com/search-console  
+   - Add property → HTML tag method  
+   - Copy the verification code into `base.html`:  
+     `content="YOUR_GOOGLE_CODE"` → your real code  
+
+2. **Bing Webmaster Tools** — https://www.bing.com/webmasters  
+   - Add site → HTML meta tag  
+   - Copy the code into `base.html`:  
+     `content="YOUR_BING_CODE"` → your real code  
+
+3. After deploy, open `https://yourdomain/robots.txt` and submit your sitemap URL in both consoles.

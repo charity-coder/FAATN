@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% set in_place = (' in ' ~ place) %}
+{% set page_title = 'Hire Verified ' ~ plural ~ in_place %}
+{% set page_desc = 'Find and hire verified ' ~ plural|lower ~ in_place ~ '. Compare FAATN-registered ' ~ plural|lower ~ ', check their status and connect with a skilled professional you can trust.' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block meta_description %}{{ page_desc }}{% endblock %}
+{% block meta_robots %}{{ 'noindex, follow' if noindex else 'index, follow, max-image-preview:large, max-snippet:-1' }}{% endblock %}
+{% block og_title %}{{ page_title }} | FAATN-GATE{% endblock %}
+{% block og_description %}{{ page_desc }}{% endblock %}
+{% block twitter_title %}{{ page_title }} | FAATN-GATE{% endblock %}
+{% block twitter_description %}{{ page_desc }}{% endblock %}
+
+{% block structured_data %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "Home", "item": {{ request.url_root.rstrip('/')|tojson }}},
+        {"@type": "ListItem", "position": 2, "name": {{ page_title|tojson }}, "item": {{ (canonical_base ~ request.path)|tojson }}}
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {"@type": "Question", "name": {{ ('What does a ' ~ singular ~ ' do?')|tojson }},
+         "acceptedAnswer": {"@type": "Answer", "text": {{ ('A ' ~ singular ~ ' typically handles ' ~ does ~ '.')|tojson }}}},
+        {"@type": "Question", "name": {{ ('How do I choose a ' ~ singular ~ in_place ~ '?')|tojson }},
+         "acceptedAnswer": {"@type": "Answer", "text": {{ check|tojson }}}},
+        {"@type": "Question", "name": "What does FAATN-Registered or FAATN-Verified mean?",
+         "acceptedAnswer": {"@type": "Answer", "text": "FAATN-Registered members have joined the Federation of Association of Artisans and Technicians of Nigeria. FAATN-Verified members have additionally completed FAATN's verification step. The badge on each profile shows which applies."}}
+      ]
+    }
+  ]
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<section class="section section-artisans" style="padding-top:7.5rem;">
+  <div class="container" style="max-width:960px;">
+
+    <nav aria-label="Breadcrumb" class="text-muted" style="font-size:0.9rem;margin-bottom:1rem;">
+      <a href="{{ url_for('index') }}">Home</a> › <a href="{{ url_for('find_artisans') }}">Find an Artisan</a> › {{ plural }}{{ in_place }}
+    </nav>
+
+    <div class="section-header">
+      <p class="section-kicker">FAATN-GATE</p>
+      <h1>Hire Verified <span class="gradient-text">{{ plural }}</span>{{ in_place }}</h1>
+      <p>
+        {% if total %}
+          {{ total }} FAATN-listed {{ (plural if total != 1 else singular)|lower }} {{ 'is' if total == 1 else 'are' }} available{{ in_place }}.
+        {% else %}
+          We are still onboarding {{ plural|lower }}{{ in_place }}.
+        {% endif %}
+        Every listing shows its FAATN status so you can see who is registered and who is verified before you make contact.
+      </p>
+    </div>
+
+    {% if members %}
+    <div class="find-results">
+      {% for m in members %}
+      <article class="find-card">
+        <div class="find-card-top">
+          {% if m.profile_pic %}
+          <img src="{{ url_for('static', filename='uploads/avatars/' + m.profile_pic) }}" alt="{{ singular|capitalize }} {{ m.full_name }}{{ in_place }}" class="find-avatar" loading="lazy">
+          {% else %}
+          <div class="find-avatar find-avatar-fallback" aria-hidden="true">{{ m.full_name[0] }}</div>
+          {% endif %}
+          <div>
+            <h2 class="find-name" style="font-size:1.1rem;">{{ m.full_name }}</h2>
+            <span class="listing-badge {{ m.badge_class() }}">{{ m.listing_label }}</span>
+          </div>
+        </div>
+        <dl class="find-meta">
+          <div><dt>Trade</dt><dd>{{ m.occupation or '—' }}</dd></div>
+          <div><dt>Specialisation</dt><dd>{{ m.specialty or m.skills or '—' }}</dd></div>
+          <div><dt>Location</dt><dd>{{ [m.location_community, m.location_lga, m.location_state]|select|join(', ') or '—' }}</dd></div>
+          <div><dt>Availability</dt><dd>{{ m.availability or '—' }}</dd></div>
+        </dl>
+        <div class="find-actions">
+          <a class="btn btn-primary btn-sm" href="{{ url_for('public_profile', user_id=m.id) }}">View profile</a>
+          <a class="btn btn-outline btn-sm" href="{{ url_for('need_help') }}">Request service</a>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="find-form" style="text-align:center;">
+      <p>No FAATN-listed {{ plural|lower }}{{ in_place }} yet.</p>
+      <p class="text-muted">Submit a request and GATE will route it to a suitable technician, or search a wider area.</p>
+      <div class="find-form-actions" style="justify-content:center;">
+        <a class="btn btn-primary" href="{{ url_for('need_help') }}">Request a {{ singular }}</a>
+        <a class="btn btn-outline" href="{{ url_for('find_artisans', **find_params) }}">Search all of Nigeria</a>
+      </div>
+    </div>
+    {% endif %}
+
+    <p style="margin-top:1.5rem;">
+      <a class="btn btn-outline" href="{{ url_for('find_artisans', **find_params) }}">Search with more filters →</a>
+      <a class="btn btn-outline" href="{{ url_for('register') }}">Are you a {{ singular }}? Register</a>
+    </p>
+
+    <h2 style="margin-top:2.5rem;">About {{ plural|lower }}{{ in_place }}</h2>
+    <p>
+      A {{ singular }} typically handles {{ does }}.
+      {% if loc_slug %}On FAATN-GATE, you can browse {{ plural|lower }} based in {{ place }} and the surrounding area, then contact them directly or send a service request.{% else %}On FAATN-GATE, you can browse {{ plural|lower }} across Nigeria by state, then contact them directly or send a service request.{% endif %}
+    </p>
+
+    <h2 style="margin-top:2rem;">Frequently asked questions</h2>
+    <h3>What does a {{ singular }} do?</h3>
+    <p>A {{ singular }} typically handles {{ does }}.</p>
+    <h3>How do I choose a {{ singular }}{{ in_place }}?</h3>
+    <p>{{ check }}</p>
+    <h3>What does FAATN-Registered or FAATN-Verified mean?</h3>
+    <p>FAATN-Registered members have joined the Federation of Association of Artisans and Technicians of Nigeria. FAATN-Verified members have additionally completed FAATN's verification step. The badge on each profile shows which applies.</p>
+
+    <h2 style="margin-top:2rem;">{{ plural }} in other locations</h2>
+    <p>
+      {% if loc_slug %}<a href="{{ url_for('seo_landing', slug=trade_slug) }}">{{ plural }} across Nigeria</a> · {% endif %}
+      {% for ls, name in other_places %}<a href="{{ url_for('seo_landing', slug=trade_slug ~ '-in-' ~ ls) }}">{{ plural }} in {{ name }}</a>{{ ' · ' if not loop.last }}{% endfor %}
+    </p>
+
+    <h2 style="margin-top:2rem;">Other trades{{ in_place }}</h2>
+    <p>
+      {% for ts, label in other_trades %}<a href="{{ url_for('seo_landing', slug=(ts ~ '-in-' ~ loc_slug) if loc_slug else ts) }}">{{ label }}{{ in_place }}</a>{{ ' · ' if not loop.last }}{% endfor %}
+    </p>
+  </div>
+</section>
+{% endblock %}
