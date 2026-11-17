@@ -1,0 +1,8 @@
+static/
+└── favicon/
+    ├── favicon.ico          ← classic (16×16 + 32×32)
+    ├── favicon.svg          ← modern scalable version (best)
+    ├── favicon-16x16.png
+    ├── favicon-32x32.png
+    ├── apple-touch-icon.png ← 180×180
+    └── site.webmanifest

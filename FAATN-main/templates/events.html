@@ -1,0 +1,117 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Events / News{% endblock %}
+
+{% block dashboard_content %}
+<div class="topbar">
+  <div>
+    <h1>📰 Events / News</h1>
+    <p class="text-muted">Official FAATN announcements and events — long write-ups (up to {{ max_words }} words) with images</p>
+  </div>
+  <a href="{{ url_for('events_news_public') }}" class="btn btn-outline btn-sm" target="_blank">View public page</a>
+</div>
+
+<div class="dash-grid" style="align-items:start;">
+  {% if can_post %}
+  <div class="dash-card">
+    <div class="dash-card-header"><h3>Publish Events / News</h3></div>
+    <div class="dash-card-body">
+      <p class="text-muted" style="font-size:0.85rem;margin-bottom:1rem;">Only the official FAATN publisher account can publish. You can write up to <strong>{{ max_words }} words</strong> and attach one image.</p>
+      <form method="POST" enctype="multipart/form-data" id="newsForm">
+        <div class="form-group">
+          <label>Type</label>
+          <select name="category" class="form-control">
+            <option value="event">Event</option>
+            <option value="news">News</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Title *</label>
+          <input type="text" name="title" class="form-control" required maxlength="200" placeholder="Headline">
+        </div>
+        <div class="form-group">
+          <label>Full write-up (max {{ max_words }} words)</label>
+          <textarea name="description" id="newsBody" class="form-control" rows="14" placeholder="Write the full story or event details here…"></textarea>
+          <p class="text-muted" style="font-size:0.8rem;margin-top:0.35rem;"><span id="wordCount">0</span> / {{ max_words }} words</p>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Date (optional)</label>
+            <input type="date" name="event_date" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>Time (optional)</label>
+            <input type="text" name="event_time" class="form-control" placeholder="e.g. 10:00 AM">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Location (optional)</label>
+          <input type="text" name="location" class="form-control" placeholder="Venue or Online">
+        </div>
+        <div class="form-group">
+          <label>Image</label>
+          <input type="file" name="image" class="form-control" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp">
+        </div>
+        <button type="submit" class="btn btn-primary">Publish</button>
+      </form>
+    </div>
+  </div>
+  {% else %}
+  <div class="dash-card">
+    <div class="dash-card-body">
+      <p class="text-muted">Publishing Events / News is limited to the official FAATN publisher account (admin). You can read all posts on the public page.</p>
+      <a href="{{ url_for('events_news_public') }}" class="btn btn-primary btn-sm">Open Events / News</a>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="dash-card">
+    <div class="dash-card-header"><h3>Published items</h3></div>
+    <div class="dash-card-body">
+      {% if events %}
+        {% for e in events %}
+        <div class="list-item" style="align-items:flex-start;margin-bottom:1rem;">
+          {% if e.image_filename %}
+          <img src="{{ url_for('static', filename='uploads/events/' + e.image_filename) }}" alt="{{ e.title }}" style="width:72px;height:72px;object-fit:cover;border-radius:10px;">
+          {% else %}
+          <div class="list-item-icon">📰</div>
+          {% endif %}
+          <div class="list-item-content">
+            <span class="status-pill" style="text-transform:capitalize;">{{ e.category or 'event' }}</span>
+            <h4 style="margin:0.35rem 0;"><a href="{{ url_for('events_news_detail', event_id=e.id) }}" style="color:inherit;text-decoration:none;">{{ e.title }}</a></h4>
+            <p class="text-muted" style="font-size:0.85rem;">{{ e.word_count() }} words · {{ e.created_at.strftime('%d %b %Y') }}</p>
+            {% if can_post %}
+            <form method="POST" action="{{ url_for('delete_event', event_id=e.id) }}" style="margin-top:0.5rem;" onsubmit="return confirm('Remove this item?');">
+              <button type="submit" class="btn btn-outline btn-sm">Remove</button>
+            </form>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="text-muted">No Events / News yet.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const ta = document.getElementById('newsBody');
+  const wc = document.getElementById('wordCount');
+  const max = {{ max_words }};
+  if (!ta || !wc) return;
+  function count() {
+    const n = ta.value.trim() ? ta.value.trim().split(/\s+/).length : 0;
+    wc.textContent = n;
+    wc.style.color = n > max ? '#f87171' : '';
+  }
+  ta.addEventListener('input', count);
+  count();
+})();
+</script>
+<style>
+@media (min-width: 900px) {
+  .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+}
+</style>
+{% endblock %}

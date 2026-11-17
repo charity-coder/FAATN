@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /login
+Disallow: /register
+
+# Sitemap — the live /robots.txt route builds this from PUBLIC_SITE_URL
+Sitemap: https://YOUR-DOMAIN/sitemap.xml
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: bingbot
+Allow: /

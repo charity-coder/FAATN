@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}{{ product.title }}{% endblock %}
+{% block meta_description %}{{ product.description[:160] if product.description else product.title }}{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top:6rem;">
+  <div class="container product-detail">
+    <p style="margin-bottom:1rem;"><a href="{{ url_for('marketplace') }}" class="text-muted">← Back to marketplace</a></p>
+
+    <div class="product-detail-grid">
+      <div class="product-detail-media">
+        {% set gallery = product.gallery_urls() %}
+        {% if gallery %}
+        <div class="product-gallery" data-gallery>
+          <div class="product-gallery-main">
+            <img src="{{ gallery[0] }}" alt="{{ product.title }}" id="galleryMainImg" class="product-detail-image">
+            {% if gallery|length > 1 %}
+            <button type="button" class="gallery-nav gallery-prev" id="galleryPrev" aria-label="Previous photo">‹</button>
+            <button type="button" class="gallery-nav gallery-next" id="galleryNext" aria-label="Next photo">›</button>
+            <span class="gallery-counter" id="galleryCounter">1 / {{ gallery|length }}</span>
+            {% endif %}
+          </div>
+          {% if gallery|length > 1 %}
+          <div class="product-gallery-thumbs" role="list">
+            {% for url in gallery %}
+            <button type="button" class="gallery-thumb {% if loop.first %}is-active{% endif %}" data-index="{{ loop.index0 }}" aria-label="Photo {{ loop.index }}">
+              <img src="{{ url }}" alt="">
+            </button>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+        {% else %}
+        <div class="product-detail-image product-image-fallback" style="min-height:280px;display:flex;align-items:center;justify-content:center;font-size:3rem;background:#f1f5f9;border-radius:16px;">📦</div>
+        {% endif %}
+      </div>
+      <div class="product-detail-info">
+        <span class="product-badge" style="position:static;display:inline-block;margin-bottom:0.5rem;">{{ product.category|capitalize }}</span>
+        <h1 style="font-size:clamp(1.4rem,4vw,1.9rem);margin:0 0 0.5rem;">{{ product.title }}</h1>
+        {% if product.price %}<p class="product-price" style="font-size:1.25rem;">{{ product.price }}</p>{% endif %}
+        {% if avg_rating %}
+        <p class="product-rating"><span class="stars">★</span> {{ avg_rating }} / 5 · {{ reviews|length }} review{% if reviews|length != 1 %}s{% endif %}</p>
+        {% else %}
+        <p class="text-muted">No reviews yet — be the first</p>
+        {% endif %}
+        {% if product.description %}
+        <p class="product-detail-desc">{{ product.description }}</p>
+        {% endif %}
+        <div class="product-seller" style="margin:1rem 0;">
+          <strong>Seller:</strong>
+          <a href="{{ url_for('public_profile', user_id=product.owner.id) }}">{{ product.owner.business_name or product.owner.full_name }}</a>
+          {% if product.owner.location_state %} · {{ product.owner.location_state }}{% endif %}
+          {% if product.owner.specialty %} · {{ product.owner.specialty }}{% endif %}
+        </div>
+        <div class="product-actions" style="flex-wrap:wrap;">
+          {% if product.owner.phone %}
+          <a class="btn btn-outline" href="tel:{{ product.owner.phone }}">Call</a>
+          {% endif %}
+          {% if product.owner.whatsapp or product.owner.phone %}
+          <a class="btn btn-primary" target="_blank" rel="noopener"
+             href="https://wa.me/{{ (product.owner.whatsapp or product.owner.phone)|replace('+','')|replace(' ','') }}">WhatsApp seller</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="reviews-section">
+      <h2 style="font-size:1.25rem;margin-bottom:1rem;">Reviews</h2>
+
+      {% if current_user.is_authenticated and current_user.id != product.user_id %}
+      <div class="dash-card review-form-card" style="margin-bottom:1.5rem;">
+        <div class="dash-card-body" style="padding:1.25rem;">
+          <h3 style="font-size:1rem;margin-bottom:0.75rem;">{{ 'Update your review' if user_review else 'Write a review' }}</h3>
+          <form method="POST" action="{{ url_for('marketplace_detail', product_id=product.id) }}" class="review-form">
+            <div class="form-group">
+              <label for="rating">Rating *</label>
+              <select id="rating" name="rating" class="form-control" required>
+                <option value="">Select stars</option>
+                {% for n in [5,4,3,2,1] %}
+                <option value="{{ n }}" {% if user_review and user_review.rating == n %}selected{% endif %}>{{ n }} star{% if n != 1 %}s{% endif %}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="comment">Comment</label>
+              <textarea id="comment" name="comment" class="form-control" rows="3" placeholder="Share your experience with this product or service…">{{ user_review.comment if user_review and user_review.comment else '' }}</textarea>
+            </div>
+            <button type="submit" class="btn btn-primary" style="min-height:48px;">{{ 'Update review' if user_review else 'Submit review' }}</button>
+          </form>
+        </div>
+      </div>
+      {% elif not current_user.is_authenticated %}
+      <p class="text-muted" style="margin-bottom:1.25rem;"><a href="{{ url_for('login', next=request.url) }}">Log in</a> to leave a review.</p>
+      {% endif %}
+
+      {% if reviews %}
+      <ul class="review-list">
+        {% for r in reviews %}
+        <li class="review-item">
+          <div class="review-head">
+            <strong>{{ r.reviewer.full_name }}</strong>
+            <span class="stars">{{ '★' * r.rating }}{{ '☆' * (5 - r.rating) }}</span>
+            <span class="text-muted review-date">{{ r.created_at.strftime('%d %b %Y') }}</span>
+          </div>
+          {% if r.comment %}<p class="review-comment">{{ r.comment }}</p>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="text-muted">No reviews yet for this listing.</p>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+  var root = document.querySelector('[data-gallery]');
+  if (!root) return;
+  var main = document.getElementById('galleryMainImg');
+  var thumbs = root.querySelectorAll('.gallery-thumb');
+  var counter = document.getElementById('galleryCounter');
+  var prev = document.getElementById('galleryPrev');
+  var next = document.getElementById('galleryNext');
+  var urls = [];
+  thumbs.forEach(function(t) {
+    var img = t.querySelector('img');
+    if (img) urls.push(img.src);
+  });
+  if (!urls.length && main) urls = [main.src];
+  var i = 0;
+  function show(n) {
+    if (!urls.length) return;
+    i = (n + urls.length) % urls.length;
+    if (main) main.src = urls[i];
+    thumbs.forEach(function(t, idx) {
+      t.classList.toggle('is-active', idx === i);
+    });
+    if (counter) counter.textContent = (i + 1) + ' / ' + urls.length;
+  }
+  thumbs.forEach(function(t) {
+    t.addEventListener('click', function() {
+      show(parseInt(t.getAttribute('data-index'), 10) || 0);
+    });
+  });
+  if (prev) prev.addEventListener('click', function() { show(i - 1); });
+  if (next) next.addEventListener('click', function() { show(i + 1); });
+  document.addEventListener('keydown', function(e) {
+    if (!root.offsetParent) return;
+    if (e.key === 'ArrowLeft') show(i - 1);
+    if (e.key === 'ArrowRight') show(i + 1);
+  });
+})();
+</script>
+{% endblock %}
