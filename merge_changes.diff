@@ -1,0 +1,1216 @@
+diff -ruN -x static -x __pycache__ -x .env a/.env.example b/.env.example
+--- a/.env.example	1970-01-01 00:00:00.000000000 +0000
++++ b/.env.example	2026-11-20 05:22:27.598750669 +0000
+@@ -0,0 +1,24 @@
++# --- First administrator (required; there is no default password) ---
++ADMIN_EMAIL=you@example.com
++ADMIN_PASSWORD=choose-a-long-password
++ADMIN_NAME=FAATN Administrator
++
++SECRET_KEY=change-me
++PUBLIC_SITE_URL=https://your-site.example
++
++# --- Email: set MAIL_FROM plus ONE of the three options ---
++MAIL_FROM=no-reply@yourdomain.ng
++MAIL_FROM_NAME=FAATN-GATE
++# A) Brevo HTTPS API (works on Render free)
++BREVO_API_KEY=
++# B) Resend HTTPS API (needs a verified domain)
++RESEND_API_KEY=
++# C) SMTP, e.g. Gmail with an App password (blocked on Render free)
++MAIL_SERVER=
++MAIL_PORT=587
++MAIL_USERNAME=
++MAIL_PASSWORD=
++# MAIL_USE_SSL=1   # only with port 465
++
++# Optional: alert email for new sign-ups / help requests
++ADMIN_NOTIFY_EMAIL=
+diff -ruN -x static -x __pycache__ -x .env a/CHANGES.md b/CHANGES.md
+--- a/CHANGES.md	2026-11-20 05:22:26.954731796 +0000
++++ b/CHANGES.md	2026-11-20 05:22:27.593713852 +0000
+@@ -79,3 +79,20 @@
+ - Landing pages with no listed members are `noindex` and left out of `sitemap.xml` until someone is listed
+ - `templates/index.html`: "Popular searches" internal links
+ - To add a trade or city, edit the two dictionaries near `seo_landing` in `app.py`
++
++---
++
++## Merge update (admin screens, hardening, update emails)
++
++- **Admin screens added** (the routes existed but the pages did not): Add a user, Reset password, Delete, and a Trash page (`admin_trash.html`, previously a crash). Sidebar link to Trash.
++- **No default admin password.** `seed_data()` needs `ADMIN_PASSWORD`; `flask create-admin` added; max 2 admins everywhere. `admin@faatn.ng` is auto-removed only if it still uses a public password and another admin exists.
++- **Passwords are never emailed.** New users get a set-your-password link; admin "set password" sends only a "password changed" notice; an admin cannot set another admin's password.
++- **Forgot-password** throttled (1 email / 5 min per account) and a "password changed" notice is sent after every reset.
++- **Update emails** respect an opt-out (`user.email_notifications`, profile checkbox, unsubscribe link + List-Unsubscribe header): profile-visit emails, admin broadcasts, and a new "email this to members" checkbox when publishing Events / News.
++- **Help form**: one-time confirmation to the visitor (capped per address) and optional admin alert (`ADMIN_NOTIFY_EMAIL`).
++- **Brevo API** added next to Resend and SMTP. Admin dashboard shows email status and a "Send a test email" button.
++- Schema: `ensure_schema_updates()` adds `user.email_notifications` automatically (SQLite and PostgreSQL).
++- Added `static/favicon/favicon.ico`.
++- **Change password** card on the Profile page (any signed-in user), and a red warning on the Admin page while the admin password is a publicly known default.
++- Local `.env` (git-ignored) creates the first admin on first start. Replace the starting password straight away.
++
+diff -ruN -x static -x __pycache__ -x .env a/DEPLOY.md b/DEPLOY.md
+--- a/DEPLOY.md	2026-11-20 05:22:26.959073762 +0000
++++ b/DEPLOY.md	2026-11-20 05:22:27.593736107 +0000
+@@ -44,6 +44,9 @@
+ | `DATABASE_URL` | Copy **Internal Database URL** from the Postgres service |
+ | `SECRET_KEY` | Any long random string (Render can auto-generate) |
+ | `FLASK_DEBUG` | `0` |
++| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Your private admin login (required; there is no default) |
++| `PUBLIC_SITE_URL` | `https://your-site` (used in email links) |
++| `MAIL_FROM` + `BREVO_API_KEY` | Email sender and key (see below) |
+ 
+ > If Render gives `postgres://...`, the app converts it to `postgresql://` automatically.
+ 
+@@ -52,7 +55,10 @@
+ Open the URL Render gives you (e.g. `https://faatn-gate.onrender.com`).
+ 
+ ### 5. First administrator
+-There are no demo logins. Before the first deploy, set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in **Render > Environment** (choose a strong password of your own). The admin account is created on the first start.
++There are no demo logins. Before the first deploy, set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in **Render > Environment** (choose a strong password of your own). The admin account is created on the first start. On an existing site, the old `admin@faatn.ng` account is removed automatically if it still has the public default password and your new admin exists.
++
++### 6. Email
++Render's free plan blocks SMTP ports (25/465/587), so plain Gmail SMTP will not work there. Use an HTTPS provider: set `MAIL_FROM` and `BREVO_API_KEY` (or `RESEND_API_KEY`). Then sign in and press **Admin > Email delivery > Send a test email**.
+ 
+ ---
+ 
+diff -ruN -x static -x __pycache__ -x .env a/README.md b/README.md
+--- a/README.md	2026-11-20 05:22:26.959433570 +0000
++++ b/README.md	2026-11-20 05:22:27.593773980 +0000
+@@ -69,8 +69,16 @@
+ export FLASK_DEBUG=1
+ ```
+ 
+-Admin credentials are **not** displayed on the login page or any public page.
+-Set `ADMIN_EMAIL` / `ADMIN_PASSWORD` before the first run so the seed creates your private admin account.
++Admin credentials are **not** displayed on the login page or any public page, and there is **no default admin password**.
++Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` before the first run (or run `flask create-admin you@example.com`) so your private admin account is created.
++At most **2** administrators are allowed. An old `admin@faatn.ng` account that still uses the public default password is removed automatically once another admin exists.
++
++### Email (password resets, verification, notifications, announcements)
++
++Set `MAIL_FROM` plus **one** of: `BREVO_API_KEY`, `RESEND_API_KEY`, or `MAIL_SERVER` (+ `MAIL_USERNAME` / `MAIL_PASSWORD`, e.g. a Gmail *App password*).
++Render's free plan blocks SMTP ports, so use `BREVO_API_KEY` or `RESEND_API_KEY` there. Check it with **Admin > Email delivery > Send a test email**.
++Optional: `ADMIN_NOTIFY_EMAIL` (alert for new sign-ups and help requests), `PUBLIC_SITE_URL` (the https address used in email links).
++Members can opt out of update emails from their profile or any email's unsubscribe link; password and security emails are always sent.
+ 
+ ---
+ 
+diff -ruN -x static -x __pycache__ -x .env a/app.py b/app.py
+--- a/app.py	2026-11-20 05:22:26.869598538 +0000
++++ b/app.py	2026-11-20 05:22:27.593607117 +0000
+@@ -15,6 +15,10 @@
+ from email.message import EmailMessage
+ from email.utils import formataddr
+ from html import escape as html_escape
++import urllib.error
++import click
++from itsdangerous import URLSafeSerializer, BadSignature
++from email_validator import validate_email, EmailNotValidError
+ 
+ try:
+     from dotenv import load_dotenv
+@@ -307,74 +311,144 @@
+ MAIL_FROM = (os.environ.get('MAIL_FROM', '') or MAIL_USERNAME).strip()
+ MAIL_FROM_NAME = os.environ.get('MAIL_FROM_NAME', 'FAATN-GATE').strip()
+ RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '').strip()
++BREVO_API_KEY = os.environ.get('BREVO_API_KEY', '').strip()      # HTTPS API; works on Render free, accepts a single verified sender
++ADMIN_NOTIFY_EMAIL = os.environ.get('ADMIN_NOTIFY_EMAIL', '').strip()  # optional: alert for new sign-ups / help requests
+ VISIT_EMAIL = os.environ.get('VISIT_EMAIL', '1') != '0'
+ 
+ mail_log = logging.getLogger('faatn.mail')
+ 
+ 
+ def mail_configured():
+-    return bool(MAIL_FROM and (RESEND_API_KEY or MAIL_SERVER))
++    return bool(MAIL_FROM and (RESEND_API_KEY or BREVO_API_KEY or MAIL_SERVER))
+ 
+ 
+-def _deliver_email(to_addr, subject, text_body, html_body):
+-    """Blocking send. Runs in a background thread; never raises."""
++def mail_transport():
++    """Which sender is active: 'resend', 'brevo', 'smtp' or None."""
++    if not mail_configured():
++        return None
++    return 'resend' if RESEND_API_KEY else 'brevo' if BREVO_API_KEY else 'smtp'
++
++
++def is_valid_email(addr):
++    if not addr or '\n' in addr or '\r' in addr:
++        return False
+     try:
+-        if RESEND_API_KEY:
+-            payload = json.dumps({
+-                'from': formataddr((MAIL_FROM_NAME, MAIL_FROM)),
+-                'to': [to_addr],
+-                'subject': subject,
+-                'text': text_body,
+-                'html': html_body or None,
+-            }).encode('utf-8')
+-            req = urllib.request.Request(
+-                'https://api.resend.com/emails', data=payload, method='POST',
+-                headers={'Authorization': f'Bearer {RESEND_API_KEY}',
+-                         'Content-Type': 'application/json'})
++        validate_email(addr, check_deliverability=False)
++        return True
++    except EmailNotValidError:
++        return False
++
++
++def _deliver_email_raw(to_addr, subject, text_body, html_body, unsubscribe_url=None):
++    """Blocking send. RAISES on any failure (callers decide what to do)."""
++    subject = ' '.join(str(subject).split())[:200]          # no line breaks -> no header injection
++    if RESEND_API_KEY:
++        data = {
++            'from': formataddr((MAIL_FROM_NAME, MAIL_FROM)),
++            'to': [to_addr], 'subject': subject, 'text': text_body, 'html': html_body or None,
++        }
++        if unsubscribe_url:
++            data['headers'] = {'List-Unsubscribe': f'<{unsubscribe_url}>'}
++        req = urllib.request.Request(
++            'https://api.resend.com/emails', data=json.dumps(data).encode('utf-8'), method='POST',
++            headers={'Authorization': f'Bearer {RESEND_API_KEY}', 'Content-Type': 'application/json'})
++        with urllib.request.urlopen(req, timeout=20) as resp:
++            resp.read()
++    elif BREVO_API_KEY:
++        data = {'sender': {'name': MAIL_FROM_NAME, 'email': MAIL_FROM}, 'to': [{'email': to_addr}],
++                'subject': subject, 'textContent': text_body}
++        if html_body:
++            data['htmlContent'] = html_body
++        if unsubscribe_url:
++            data['headers'] = {'List-Unsubscribe': f'<{unsubscribe_url}>'}
++        req = urllib.request.Request(
++            'https://api.brevo.com/v3/smtp/email', data=json.dumps(data).encode('utf-8'), method='POST',
++            headers={'api-key': BREVO_API_KEY, 'accept': 'application/json', 'content-type': 'application/json'})
++        try:
+             with urllib.request.urlopen(req, timeout=20) as resp:
+                 resp.read()
++        except urllib.error.HTTPError as exc:
++            raise RuntimeError(f'Brevo rejected the email (HTTP {exc.code}): {exc.read().decode("utf-8", "ignore")[:200]}') from None
++    else:
++        msg = EmailMessage()
++        msg['From'] = formataddr((MAIL_FROM_NAME, MAIL_FROM))
++        msg['To'] = to_addr
++        msg['Subject'] = subject
++        if unsubscribe_url:
++            msg['List-Unsubscribe'] = f'<{unsubscribe_url}>'
++        msg.set_content(text_body)
++        if html_body:
++            msg.add_alternative(html_body, subtype='html')
++        if MAIL_USE_SSL:
++            server = smtplib.SMTP_SSL(MAIL_SERVER, MAIL_PORT, timeout=20)
+         else:
+-            msg = EmailMessage()
+-            msg['From'] = formataddr((MAIL_FROM_NAME, MAIL_FROM))
+-            msg['To'] = to_addr
+-            msg['Subject'] = subject
+-            msg.set_content(text_body)
+-            if html_body:
+-                msg.add_alternative(html_body, subtype='html')
+-            if MAIL_USE_SSL:
+-                server = smtplib.SMTP_SSL(MAIL_SERVER, MAIL_PORT, timeout=20)
+-            else:
+-                server = smtplib.SMTP(MAIL_SERVER, MAIL_PORT, timeout=20)
++            server = smtplib.SMTP(MAIL_SERVER, MAIL_PORT, timeout=20)
++        try:
++            if MAIL_USE_TLS and not MAIL_USE_SSL:
++                server.starttls()
++            if MAIL_USERNAME:
++                server.login(MAIL_USERNAME, MAIL_PASSWORD)
++            server.send_message(msg)
++        finally:
+             try:
+-                if MAIL_USE_TLS and not MAIL_USE_SSL:
+-                    server.starttls()
+-                if MAIL_USERNAME:
+-                    server.login(MAIL_USERNAME, MAIL_PASSWORD)
+-                server.send_message(msg)
+-            finally:
+-                try:
+-                    server.quit()
+-                except Exception:
+-                    pass
++                server.quit()
++            except Exception:
++                pass
++
++
++def _deliver_email(to_addr, subject, text_body, html_body, unsubscribe_url=None):
++    """Blocking send used by background threads; never raises."""
++    try:
++        _deliver_email_raw(to_addr, subject, text_body, html_body, unsubscribe_url)
+         mail_log.info('Email sent to %s (%s)', to_addr, subject)
+     except Exception as exc:  # network / auth / rejected recipient
+         mail_log.error('Email to %s failed: %s', to_addr, exc)
+         print(f'[mail] FAILED to send "{subject}" to {to_addr}: {exc}', flush=True)
+ 
+ 
+-def send_email(to_addr, subject, text_body, html_body=None):
++def send_email_now(to_addr, subject, text_body, html_body=None):
++    """Send immediately and report the reason on failure (for the admin "test email" button)."""
++    if not mail_configured():
++        return False, 'Email is not configured (set BREVO_API_KEY, RESEND_API_KEY or MAIL_SERVER, plus MAIL_FROM).'
++    if not is_valid_email(to_addr):
++        return False, f'Invalid recipient address: {to_addr!r}'
++    try:
++        _deliver_email_raw(to_addr, subject, text_body, html_body)
++        return True, None
++    except Exception as exc:
++        return False, f'{type(exc).__name__}: {exc}'
++
++
++def send_email(to_addr, subject, text_body, html_body=None, unsubscribe_url=None):
+     """Queue an email in a background thread so the request is not slowed down.
+ 
+-    Returns False when mail is not configured or there is no address.
++    Returns False when mail is not configured or the address is not valid.
+     """
+-    if not to_addr or not mail_configured():
++    if not to_addr or not mail_configured() or not is_valid_email(to_addr):
+         return False
+-    threading.Thread(
+-        target=_deliver_email, args=(to_addr, subject, text_body, html_body), daemon=True
+-    ).start()
++    if app.testing:
++        _deliver_email(to_addr, subject, text_body, html_body, unsubscribe_url)
++    else:
++        threading.Thread(target=_deliver_email, args=(to_addr, subject, text_body, html_body, unsubscribe_url),
++                         daemon=True).start()
+     return True
+ 
+ 
++def send_many(jobs):
++    """jobs = list of kwargs for _deliver_email. One background thread, sent one by one."""
++    if not jobs or not mail_configured():
++        return 0
++
++    def run():
++        for j in jobs:
++            _deliver_email(**j)
++    if app.testing:
++        run()
++    else:
++        threading.Thread(target=run, daemon=True).start()
++    return len(jobs)
++
++
+ def external_url(endpoint, **values):
+     """Absolute URL; uses PUBLIC_SITE_URL when set (correct https domain behind Render's proxy)."""
+     path = url_for(endpoint, **values)
+@@ -384,7 +458,7 @@
+     return url_for(endpoint, _external=True, **values)
+ 
+ 
+-def _email_shell(heading, body_html, button_label=None, button_url=None):
++def _email_shell(heading, body_html, button_label=None, button_url=None, unsubscribe_url=None):
+     button = ''
+     if button_label and button_url:
+         button = (
+@@ -392,6 +466,10 @@
+             'style="background:#0d7a4f;color:#ffffff;padding:12px 22px;border-radius:8px;'
+             f'text-decoration:none;font-weight:600;display:inline-block;">{html_escape(button_label)}</a></p>'
+         )
++    unsub = ''
++    if unsubscribe_url:
++        unsub = (f'<br><a href="{html_escape(unsubscribe_url)}" style="color:#6b7280;">'
++                 'Unsubscribe from update emails</a> (password and security emails are always sent)')
+     return (
+         '<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;'
+         'border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">'
+@@ -399,7 +477,7 @@
+         f'<div style="padding:24px;color:#1f2937;line-height:1.55;"><h2 style="margin-top:0;color:#065f3c;">{html_escape(heading)}</h2>'
+         f'{body_html}{button}</div>'
+         '<div style="background:#f9fafb;color:#6b7280;padding:12px 24px;font-size:12px;">'
+-        'Federation of Artisans and Technicians of Nigeria</div></div>'
++        f'Federation of Artisans and Technicians of Nigeria{unsub}</div></div>'
+     )
+ 
+ 
+@@ -452,6 +530,71 @@
+     return sent
+ 
+ 
++def _unsub_serializer():
++    return URLSafeSerializer(app.config['SECRET_KEY'], salt='faatn-email-unsub')
++
++
++def unsubscribe_token(user_id):
++    return _unsub_serializer().dumps(user_id)
++
++
++def unsubscribe_link(user_id):
++    return external_url('email_unsubscribe', token=unsubscribe_token(user_id))
++
++
++def send_password_changed_email(user, by_admin=False):
++    """Security notice. NEVER contains the password itself."""
++    who = 'a FAATN administrator' if by_admin else 'you'
++    link = external_url('login')
++    text = (f'Hello {user.full_name or "there"},\n\nThe password for your FAATN-GATE account was just changed by {who}.\n\n'
++            'If this was not expected, contact FAATN at faatnigeria@gmail.com straight away.\n\n- FAATN-GATE')
++    html = _email_shell('Your password was changed',
++                        f'<p>Hello {html_escape(user.full_name or "there")},</p>'
++                        f'<p>The password for your FAATN-GATE account was just changed by {html_escape(who)}.</p>'
++                        '<p>If this was not expected, contact FAATN at faatnigeria@gmail.com straight away.</p>',
++                        'Sign in', link)
++    return send_email(user.email, 'Your FAATN-GATE password was changed', text, html)
++
++
++def send_welcome_email(user, token, hours):
++    """Admin-created account: the user chooses their own password through a one-time link."""
++    link = external_url('reset_password', token=token)
++    text = (f'Hello {user.full_name},\n\nA FAATN administrator created a {ROLES.get(user.role, user.role)} account for you '
++            f'on FAATN-GATE ({user.email}).\n\nChoose your password here (valid {hours} hours):\n{link}\n\n- FAATN-GATE')
++    html = _email_shell('Your FAATN-GATE account is ready',
++                        f'<p>Hello {html_escape(user.full_name)},</p>'
++                        f'<p>A FAATN administrator created a {html_escape(ROLES.get(user.role, user.role))} account for you ({html_escape(user.email)}).</p>'
++                        f'<p>Use the button below to choose your own password (valid {hours} hours).</p>',
++                        'Set my password', link) + f'<p style="font-size:12px;color:#6b7280;">Or copy this link: {html_escape(link)}</p>'
++    return send_email(user.email, 'Your FAATN-GATE account', text, html)
++
++
++def email_notify_admin(subject, lines):
++    if not ADMIN_NOTIFY_EMAIL:
++        return False
++    link = external_url('admin_dashboard')
++    text = '\n'.join(lines) + f'\n\n{link}'
++    html = _email_shell(subject, ''.join(f'<p>{html_escape(x)}</p>' for x in lines), 'Open admin dashboard', link)
++    return send_email(ADMIN_NOTIFY_EMAIL, f'[FAATN-GATE] {subject}', text, html)
++
++
++def broadcast_event_email(event):
++    """Email a newly published Events / News item to every member who has not opted out."""
++    link = external_url('events_news_detail', event_id=event.id)
++    snippet = (event.description or '')[:400] + ('...' if len(event.description or '') > 400 else '')
++    jobs = []
++    for u in User.query.filter(User.email.isnot(None)).all():
++        if u.email_notifications is False or not is_valid_email(u.email):
++            continue
++        unsub = unsubscribe_link(u.id)
++        text = f'Hello {u.full_name},\n\n{event.title}\n\n{snippet}\n\nRead more: {link}\n\nUnsubscribe: {unsub}\n\n- FAATN-GATE'
++        html = _email_shell(event.title, f'<p>Hello {html_escape(u.full_name or "")},</p><p style="white-space:pre-line;">{html_escape(snippet)}</p>',
++                            'Read more', link, unsubscribe_url=unsub)
++        jobs.append({'to_addr': u.email, 'subject': f'FAATN-GATE: {event.title}', 'text_body': text,
++                     'html_body': html, 'unsubscribe_url': unsub})
++    return send_many(jobs)
++
++
+ # ==================== MODELS ====================
+ 
+ class User(UserMixin, db.Model):
+@@ -489,6 +632,8 @@
+     institution_type = db.Column(db.String(80))
+     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+     last_login = db.Column(db.DateTime)
++    # False = member opted out of update emails (password / security emails are always sent)
++    email_notifications = db.Column(db.Boolean, default=True)
+ 
+     def avatar_url(self):
+         if self.profile_pic:
+@@ -798,6 +943,21 @@
+     return msg
+ 
+ 
++@app.route('/email/unsubscribe/<token>')
++def email_unsubscribe(token):
++    try:
++        uid = _unsub_serializer().loads(token)
++    except BadSignature:
++        flash('That unsubscribe link is not valid.', 'danger')
++        return redirect(url_for('index'))
++    user = User.query.get(uid)
++    if user:
++        user.email_notifications = False
++        db.session.commit()
++    flash('You will no longer get update emails. Password and security emails are still sent.', 'info')
++    return redirect(url_for('index'))
++
++
+ # ==================== ROUTES ====================
+ 
+ @app.route('/')
+@@ -1139,6 +1299,8 @@
+         db.session.add(notif)
+         db.session.commit()
+ 
++        email_notify_admin('New registration', [f'{user.full_name} ({user.email}) registered as {user.role}.'])
++
+         # Send the verification link by email
+         if send_verification_email(user, token):
+             flash(f'Registration successful! We sent a verification link to {email}. '
+@@ -1205,6 +1367,31 @@
+     return redirect(url_for('login'))
+ 
+ 
++@app.route('/dashboard/profile/password', methods=['POST'])
++@login_required
++def change_password():
++    """Any signed-in member (including the admin) changes their own password."""
++    current = request.form.get('current_password', '')
++    new = request.form.get('new_password', '')
++    confirm = request.form.get('confirm_password', '')
++    if not current_user.check_password(current):
++        flash('Your current password is not correct. Password not changed.', 'danger')
++    elif len(new) < 8:
++        flash('The new password must be at least 8 characters.', 'danger')
++    elif new in KNOWN_PUBLIC_PASSWORDS:
++        flash('That password is publicly known. Choose a different one.', 'danger')
++    elif new != confirm:
++        flash('The new passwords do not match.', 'danger')
++    else:
++        current_user.set_password(new)
++        current_user.reset_token = None
++        current_user.reset_token_expires = None
++        db.session.commit()
++        send_password_changed_email(current_user)
++        flash('Your password was changed.', 'success')
++    return redirect(url_for('profile') + '#password')
++
++
+ @app.route('/dashboard/resend-verification', methods=['POST'])
+ @login_required
+ def resend_verification():
+@@ -1228,7 +1415,10 @@
+     if request.method == 'POST':
+         email = request.form.get('email', '').strip().lower()
+         user = User.query.filter_by(email=email).first()
+-        if user:
++        # Throttle: at most one reset email per account every 5 minutes (stops inbox-flooding someone else)
++        recently_sent = bool(user and user.reset_token_expires and
++                             user.reset_token_expires > datetime.utcnow() + timedelta(hours=2) - timedelta(minutes=5))
++        if user and not recently_sent:
+             token = secrets.token_urlsafe(32)
+             user.reset_token = token
+             user.reset_token_expires = datetime.utcnow() + timedelta(hours=2)
+@@ -1258,7 +1448,9 @@
+             user.set_password(password)
+             user.reset_token = None
+             user.reset_token_expires = None
++            user.email_verified = True  # they just proved they own this inbox
+             db.session.commit()
++            send_password_changed_email(user)
+             flash('Password updated. You can log in now.', 'success')
+             return redirect(url_for('login'))
+     return render_template('reset_password.html', token=token)
+@@ -1322,6 +1514,7 @@
+         current_user.experience_years = int(request.form.get('experience_years') or 0)
+         current_user.portfolio = request.form.get('portfolio', current_user.portfolio)
+         current_user.needs = request.form.get('needs', current_user.needs)
++        current_user.email_notifications = bool(request.form.get('email_notifications'))
+ 
+         # Profile picture upload
+         file = request.files.get('profile_pic')
+@@ -1469,7 +1662,10 @@
+         )
+         db.session.add(event)
+         db.session.commit()
+-        flash('Events / News published successfully.', 'success')
++        if request.form.get('notify_members'):
++            flash(f'Events / News published. Emailing {broadcast_event_email(event)} member(s).', 'success')
++        else:
++            flash('Events / News published successfully.', 'success')
+         return redirect(url_for('events_news_public'))
+ 
+     items = Event.query.filter_by(is_active=True).order_by(Event.created_at.desc()).all()
+@@ -1582,7 +1778,10 @@
+         )
+         db.session.add(event)
+         db.session.commit()
+-        flash('Events / News item published.', 'success')
++        if request.form.get('notify_members'):
++            flash(f'Events / News item published. Emailing {broadcast_event_email(event)} member(s).', 'success')
++        else:
++            flash('Events / News item published.', 'success')
+         return redirect(url_for('events'))
+ 
+     all_events = Event.query.filter_by(is_active=True).order_by(
+@@ -1749,6 +1948,20 @@
+         )
+         db.session.add(hr)
+         db.session.commit()
++        visitor = (hr.requester_email or '').strip().lower()
++        if is_valid_email(visitor):
++            recent = HelpRequest.query.filter(db.func.lower(HelpRequest.requester_email) == visitor,
++                                              HelpRequest.created_at >= datetime.utcnow() - timedelta(hours=1)).count()
++            if recent <= 3:  # stops the form being used to spam someone else's inbox
++                body = (f'Hello {hr.requester_name or "there"},\n\nThank you for contacting FAATN-GATE. Your request was received and '
++                        f'FAATN will route it to suitable registered technicians.\n\nSummary: {(hr.description or "")[:200]}\n\n'
++                        '(You received this one-time message because this address was entered on the FAATN-GATE "I Need Help" form.)')
++                html = _email_shell('We received your request',
++                                    f'<p>Hello {html_escape(hr.requester_name or "there")},</p>'
++                                    '<p>Thank you for contacting FAATN-GATE. Your request was received and FAATN will route it to suitable registered technicians.</p>'
++                                    f'<p><em>{html_escape((hr.description or "")[:200])}</em></p>')
++                send_email(visitor, 'FAATN-GATE: we received your request', body, html)
++        email_notify_admin('New help request', [f'{hr.requester_name or "Someone"} ({hr.requester_phone or "no phone"}) in {hr.location_state or "?"}: {(hr.description or "")[:200]}'])
+         flash('Your request has been submitted. FAATN will route it to suitable registered technicians.', 'success')
+         return redirect(url_for('need_help'))
+ 
+@@ -2187,18 +2400,19 @@
+                 seen.pop(k, None)
+         session['profile_visits'] = seen
+ 
+-        if VISIT_EMAIL and not recent and member.email:
++        if VISIT_EMAIL and not recent and member.email and member.email_notifications is not False:
+             link = external_url('notifications')
++            unsub_visit = unsubscribe_link(member.id)
+             text = (
+                 f'Hello {member.full_name},\n\n{message}\n\n'
+-                f'See your notifications: {link}\n\n— FAATN-GATE'
++                f'See your notifications: {link}\n\nUnsubscribe from update emails: {unsub_visit}\n\n— FAATN-GATE'
+             )
+             html = _email_shell(
+                 'Someone visited your profile',
+                 f'<p>Hello {html_escape(member.full_name or "")},</p><p>{html_escape(message)}</p>',
+-                'View notifications', link,
++                'View notifications', link, unsubscribe_url=unsub_visit,
+             )
+-            send_email(member.email, 'Someone visited your FAATN-GATE profile', text, html)
++            send_email(member.email, 'Someone visited your FAATN-GATE profile', text, html, unsubscribe_url=unsub_visit)
+     except Exception as exc:  # never break the public page because of a notification
+         db.session.rollback()
+         print(f'[visit] notification failed: {exc}', flush=True)
+@@ -2526,6 +2740,8 @@
+         admin_count=n_admins,
+         max_admins=MAX_ADMINS,
+         can_create_admin=n_admins < MAX_ADMINS,
++        mail_transport=mail_transport(),
++        weak_password=any(current_user.check_password(p) for p in KNOWN_PUBLIC_PASSWORDS),
+     )
+ 
+ 
+@@ -2620,16 +2836,17 @@
+ 
+         if also_email:
+             for u in recipients:
+-                if not u.email:
++                if not u.email or u.email_notifications is False:
+                     continue
+-                text = f'Hello {u.full_name},\n\n{message}\n\nOpen your notifications: {link}\n\n- FAATN-GATE'
++                unsub = unsubscribe_link(u.id)
++                text = f'Hello {u.full_name},\n\n{message}\n\nOpen your notifications: {link}\n\nUnsubscribe from update emails: {unsub}\n\n- FAATN-GATE'
+                 html = _email_shell(
+                     title,
+                     f'<p>Hello {html_escape(u.full_name or "")},</p>'
+                     f'<p style="white-space:pre-line;">{html_escape(message)}</p>',
+-                    'View notifications', link,
++                    'View notifications', link, unsubscribe_url=unsub,
+                 )
+-                if send_email(u.email, title, text, html):
++                if send_email(u.email, title, text, html, unsubscribe_url=unsub):
+                     emailed += 1
+ 
+         if len(recipients) == 1:
+@@ -2659,32 +2876,39 @@
+ @app.route('/dashboard/admin/create-user', methods=['POST'])
+ @admin_required
+ def admin_create_user():
+-    """Admin creates a new account (member or second admin). Max 2 admin accounts."""
++    """Admin creates an account (member, or a 2nd admin: max MAX_ADMINS).
++
++    The new user is emailed a one-time link to choose their OWN password; the password itself is
++    never put in an email. Leave the password blank to have a strong one generated."""
+     email = (request.form.get('email') or '').strip().lower()
+     full_name = (request.form.get('full_name') or '').strip()
+-    password = request.form.get('password') or ''
++    typed = request.form.get('password') or ''
+     role = (request.form.get('role') or 'artisan').strip().lower()
+     phone = (request.form.get('phone') or '').strip()
+     location_state = (request.form.get('location_state') or '').strip()
+     occupation = (request.form.get('occupation') or '').strip()
+     send_welcome = request.form.get('send_welcome') == '1'
+ 
+-    if not email or not full_name:
+-        flash('Email and full name are required.', 'danger')
++    if not full_name:
++        flash('Full name is required.', 'danger')
++        return redirect(url_for('admin_dashboard'))
++    if not is_valid_email(email):
++        flash('Enter a valid email address.', 'danger')
+         return redirect(url_for('admin_dashboard'))
+-    if len(password) < 6:
+-        flash('Password must be at least 6 characters.', 'danger')
++    if typed and len(typed) < 6:
++        flash('Password must be at least 6 characters (or leave it blank to generate one).', 'danger')
+         return redirect(url_for('admin_dashboard'))
+     if role not in list(STAKEHOLDER_ROLES) + ['admin']:
+         flash('Invalid role.', 'danger')
+         return redirect(url_for('admin_dashboard'))
+-    if User.query.filter_by(email=email).first():
++    if User.query.filter(db.func.lower(User.email) == email).first():
+         flash(f'Email {email} is already registered.', 'warning')
+         return redirect(url_for('admin_dashboard'))
+     if role == 'admin' and not can_create_admin():
+         flash(f'Maximum of {MAX_ADMINS} administrator accounts allowed. Cannot create another admin.', 'danger')
+         return redirect(url_for('admin_dashboard'))
+ 
++    password = typed or secrets.token_urlsafe(9)
+     user = User(
+         email=email,
+         full_name=full_name,
+@@ -2693,7 +2917,7 @@
+         location_state=location_state or None,
+         occupation=occupation or None,
+         verified=(role == 'admin'),
+-        email_verified=(role == 'admin'),
++        email_verified=True,  # an administrator vouches for this address
+         listing_category='verified' if role == 'admin' else (
+             'registered' if role in MEMBER_ROLES else 'public'
+         ),
+@@ -2702,38 +2926,22 @@
+     db.session.add(user)
+     db.session.commit()
+ 
+-    emailed = False
+-    if send_welcome and user.email:
+-        login_link = external_url('login')
+-        text = (
+-            f'Hello {user.full_name},\n\n'
+-            f'An account has been created for you on FAATN-GATE.\n\n'
+-            f'Email: {user.email}\n'
+-            f'Temporary password: {password}\n'
+-            f'Role: {ROLES.get(role, role)}\n\n'
+-            f'Please sign in and change your password:\n{login_link}\n\n'
+-            f'- FAATN-GATE Administration'
+-        )
+-        html = _email_shell(
+-            'Your FAATN-GATE account',
+-            f'<p>Hello {html_escape(user.full_name)},</p>'
+-            f'<p>An account has been created for you on FAATN-GATE.</p>'
+-            f'<p><strong>Email:</strong> {html_escape(user.email)}<br>'
+-            f'<strong>Temporary password:</strong> {html_escape(password)}<br>'
+-            f'<strong>Role:</strong> {html_escape(ROLES.get(role, role))}</p>'
+-            f'<p>Please sign in and change your password as soon as possible.</p>',
+-            'Sign in', login_link,
+-        )
+-        emailed = send_email(user.email, 'Your FAATN-GATE account', text, html)
+-
+     msg = f'User {full_name} ({email}) created as {ROLES.get(role, role)}.'
++    link = None
+     if send_welcome:
+-        if emailed:
+-            msg += ' Welcome email queued to their inbox.'
++        token = secrets.token_urlsafe(32)
++        user.reset_token = token
++        user.reset_token_expires = datetime.utcnow() + timedelta(hours=48)
++        db.session.commit()
++        if send_welcome_email(user, token, 48):
++            msg += ' A welcome email with a set-your-password link was sent to their inbox.'
+         elif mail_configured():
+-            msg += ' Welcome email could not be queued.'
++            msg += ' The welcome email could not be queued.'
+         else:
+-            msg += ' Email is not configured; share the password securely offline.'
++            link = external_url('reset_password', token=token)
++            msg += f' Email is not configured, so share this set-password link yourself (valid 48 hours): {link}'
++    if not typed:
++        msg += f' Temporary password (shown once): {password}'
+     flash(msg, 'success')
+     return redirect(url_for('admin_dashboard'))
+ 
+@@ -2741,70 +2949,54 @@
+ @app.route('/dashboard/admin/user/<int:user_id>/reset-password', methods=['POST'])
+ @admin_required
+ def admin_reset_password(user_id):
+-    """Admin sets a new password for a user and optionally emails it (or a reset link)."""
++    """Admin resets a user's password: email them a reset link, or set a new one.
++
++    The user is always told (by email) that the password changed, but the email never contains it."""
+     user = User.query.get_or_404(user_id)
+     if user.id == current_user.id:
+-        flash('Use your profile page to change your own password.', 'warning')
++        flash('To change your own password use the "Change password" card on your Profile page.', 'warning')
+         return redirect(url_for('admin_dashboard'))
+ 
+-    mode = (request.form.get('mode') or 'set').strip().lower()  # set | link
+-    notify = request.form.get('notify') == '1'
++    mode = (request.form.get('mode') or 'link').strip().lower()  # link | set
+     new_password = (request.form.get('new_password') or '').strip()
+ 
+-    if mode == 'link':
+-        token = secrets.token_urlsafe(32)
+-        user.reset_token = token
+-        user.reset_token_expires = datetime.utcnow() + timedelta(hours=2)
++    if mode == 'set':
++        if user.role == 'admin':
++            flash("For safety you cannot set another administrator's password. Send them a reset link instead.", 'danger')
++            return redirect(url_for('admin_dashboard'))
++        if new_password and len(new_password) < 6:
++            flash('New password must be at least 6 characters (or leave it blank to generate one).', 'danger')
++            return redirect(url_for('admin_dashboard'))
++        password = new_password or secrets.token_urlsafe(9)
++        user.set_password(password)
++        user.reset_token = None
++        user.reset_token_expires = None
+         db.session.commit()
+-        sent = send_reset_email(user, token)
+-        if sent:
+-            flash(f'Password reset link emailed to {user.email}.', 'success')
+-        elif mail_configured():
+-            flash(f'Reset link generated but email failed for {user.email}. Check mail logs.', 'warning')
+-        else:
+-            link = external_url('reset_password', token=token)
+-            flash(f'Email not configured. Share this reset link securely: {link}', 'info')
++        send_password_changed_email(user, by_admin=True)
++        flash(f'New password for {user.full_name} (shown once, share it privately): {password}', 'warning')
+         return redirect(url_for('admin_dashboard'))
+ 
+-    # mode == set: admin chooses the new password
+-    if len(new_password) < 6:
+-        flash('New password must be at least 6 characters.', 'danger')
+-        return redirect(url_for('admin_dashboard'))
+-    user.set_password(new_password)
+-    user.reset_token = None
+-    user.reset_token_expires = None
++    token = secrets.token_urlsafe(32)
++    user.reset_token = token
++    user.reset_token_expires = datetime.utcnow() + timedelta(hours=2)
+     db.session.commit()
++    if send_reset_email(user, token):
++        flash(f'Password reset link emailed to {user.email} (valid 2 hours).', 'success')
++    elif mail_configured():
++        flash(f'Reset link generated but email failed for {user.email}. Check mail logs.', 'warning')
++    else:
++        flash(f'Email not configured. Share this reset link securely (valid 2 hours): {external_url("reset_password", token=token)}', 'info')
++    return redirect(url_for('admin_dashboard'))
+ 
+-    emailed = False
+-    if notify and user.email:
+-        login_link = external_url('login')
+-        text = (
+-            f'Hello {user.full_name},\n\n'
+-            f'Your FAATN-GATE password was reset by an administrator.\n\n'
+-            f'Temporary password: {new_password}\n\n'
+-            f'Sign in and change it if you wish:\n{login_link}\n\n'
+-            f'If you did not expect this, contact FAATN support immediately.\n\n'
+-            f'- FAATN-GATE Administration'
+-        )
+-        html = _email_shell(
+-            'Your password was reset',
+-            f'<p>Hello {html_escape(user.full_name)},</p>'
+-            f'<p>Your FAATN-GATE password was reset by an administrator.</p>'
+-            f'<p><strong>Temporary password:</strong> {html_escape(new_password)}</p>'
+-            f'<p>Sign in and change it if you wish. If you did not expect this, contact FAATN support.</p>',
+-            'Sign in', login_link,
+-        )
+-        emailed = send_email(user.email, 'Your FAATN-GATE password was reset', text, html)
+ 
+-    msg = f'Password updated for {user.full_name} ({user.email}).'
+-    if notify:
+-        if emailed:
+-            msg += ' Notification emailed to the user.'
+-        elif mail_configured():
+-            msg += ' Email notification failed.'
+-        else:
+-            msg += ' Email not configured; share the new password securely offline.'
+-    flash(msg, 'success')
++@app.route('/dashboard/admin/test-email', methods=['POST'])
++@admin_required
++def admin_test_email():
++    html = _email_shell('Test email', '<p>If you can read this, FAATN-GATE email delivery works.</p>')
++    ok, err = send_email_now(current_user.email, 'FAATN-GATE test email',
++                             'If you can read this, FAATN-GATE email delivery works.', html)
++    flash(f'Test email sent to {current_user.email}. Check the inbox (and spam).' if ok else f'Test email FAILED: {err}',
++          'success' if ok else 'danger')
+     return redirect(url_for('admin_dashboard'))
+ 
+ 
+@@ -2881,28 +3073,34 @@
+ 
+ # ==================== SEED DATA ====================
+ 
+-def seed_data():
+-    # Never create more than MAX_ADMINS administrators
+-    if admin_count() >= 1:
+-        return
++DEFAULT_ADMIN_EMAIL = 'admin@faatn.ng'   # the old default admin (public password) - see retire_default_admin()
++KNOWN_PUBLIC_PASSWORDS = ('change-me-on-first-login', 'Admin@FAATN2026')
++
+ 
+-    # Admin — password from env so it is never published on the website or in docs
+-    admin_password = os.environ.get('ADMIN_PASSWORD', 'change-me-on-first-login')
++def create_admin_account(email, full_name, password):
++    """Create an administrator. Returns (user, error). Enforces MAX_ADMINS."""
++    email = (email or '').strip().lower()
++    if not is_valid_email(email):
++        return None, 'Enter a valid email address.'
++    if len(password or '') < 8:
++        return None, 'Admin password must be at least 8 characters.'
++    if not can_create_admin():
++        return None, f'The maximum of {MAX_ADMINS} administrators is already in use.'
++    if User.query.filter(db.func.lower(User.email) == email).first():
++        return None, 'That email is already registered.'
+     admin = User(
+-        email=os.environ.get('ADMIN_EMAIL', 'admin@faatn.ng'),
+-        full_name='FAATN Administrator',
+-        role='admin',
+-        location_state='FCT',
+-        occupation='System Admin',
+-        verified=True,
+-        email_verified=True,
++        email=email, full_name=(full_name or 'FAATN Administrator').strip(), role='admin',
++        location_state='FCT', occupation='System Admin', verified=True, email_verified=True,
+         listing_category='verified',
+     )
+-    admin.set_password(admin_password)
++    admin.set_password(password)
+     db.session.add(admin)
+-
+     db.session.commit()
++    return admin, None
++
+ 
++def _seed_sample_content(admin):
++    """Sample trainings / opportunities / event (NOT accounts), created only with the very first admin."""
+     # Trainings
+     trainings = [
+         Training(title='Advanced Woodworking & CNC Operation', provider='FAATN Skills Hub - Anambra', description='Master modern CNC machines and precision woodworking techniques for high-value furniture production.', duration='6 weeks', skill_gap='CNC & Digital Fabrication', location='Awka, Anambra'),
+@@ -2941,6 +3139,53 @@
+     print('✅ Database seeded successfully!')
+ 
+ 
++def seed_data():
++    """No demo accounts and NO default password.
++
++    The first administrator comes from ADMIN_EMAIL + ADMIN_PASSWORD (or `flask create-admin`).
++    With ADMIN_EMAIL + ADMIN_PASSWORD set, a missing admin is also added later (max MAX_ADMINS)."""
++    email = os.environ.get('ADMIN_EMAIL', '').strip().lower()
++    password = os.environ.get('ADMIN_PASSWORD', '')
++    first_run = admin_count() == 0
++    if not password:
++        if first_run:
++            print('⚠️  No administrator exists. Set ADMIN_EMAIL and ADMIN_PASSWORD, or run: flask create-admin you@example.com', flush=True)
++        return
++    email = email or DEFAULT_ADMIN_EMAIL
++    if not first_run and User.query.filter(db.func.lower(User.email) == email).first():
++        return  # already created on an earlier start
++    admin, err = create_admin_account(email, os.environ.get('ADMIN_NAME', 'FAATN Administrator'), password)
++    if not admin:
++        print(f'⚠️  Administrator from environment not created: {err}', flush=True)
++        return
++    print(f'✅ Administrator {admin.email} created from environment.', flush=True)
++    if first_run:
++        _seed_sample_content(admin)
++
++
++@app.cli.command('create-admin')
++@click.argument('email')
++@click.option('--name', default='FAATN Administrator', show_default=True)
++@click.password_option()
++def create_admin_command(email, name, password):
++    """Create an administrator (max 2):  flask create-admin you@example.com"""
++    admin, err = create_admin_account(email, name, password)
++    print(f'Administrator {admin.email} created.' if admin else f'Not created: {err}')
++
++
++def retire_default_admin():
++    """Remove admin@faatn.ng, but ONLY if it still uses a publicly known password AND another
++    administrator exists. If you changed its password it is left alone."""
++    old = User.query.filter(db.func.lower(User.email) == DEFAULT_ADMIN_EMAIL, User.role == 'admin').first()
++    if not old or not any(old.check_password(p) for p in KNOWN_PUBLIC_PASSWORDS):
++        return
++    if User.query.filter(User.role == 'admin', User.id != old.id).count() == 0:
++        print('⚠️  SECURITY: admin@faatn.ng still uses a public default password. Set ADMIN_EMAIL and '
++              'ADMIN_PASSWORD (a different email) and restart: it will then be removed automatically.', flush=True)
++        return
++    purge_users([old.id])
++    print('🧹 Removed the default admin account (it used a public password).', flush=True)
++
+ 
+ # Legacy demo accounts (removed safely on every app start)
+ DEMO_EMAILS = (
+@@ -3219,16 +3464,26 @@
+     Safe to run on every start: it does nothing once the demo users are gone.
+     """
+     demo_users = User.query.filter(User.email.in_(DEMO_EMAILS)).all()
+-    if not demo_users:
+-        return
+-    purge_users([u.id for u in demo_users])
+-    print(f'🧹 Removed {len(demo_users)} demo user(s) and their data.')
++    if demo_users:
++        purge_users([u.id for u in demo_users])
++        print(f'🧹 Removed {len(demo_users)} demo user(s) and their data.')
++    retire_default_admin()
++
++
++def ensure_schema_updates():
++    """db.create_all() never alters existing tables, so add new columns by hand (SQLite and PostgreSQL)."""
++    from sqlalchemy import inspect as sa_inspect, text
++    cols = {c['name'] for c in sa_inspect(db.engine).get_columns('user')}
++    if 'email_notifications' not in cols:
++        with db.engine.begin() as conn:
++            conn.execute(text('ALTER TABLE "user" ADD COLUMN email_notifications BOOLEAN DEFAULT TRUE'))
+ 
+ 
+ # ==================== INIT ====================
+ 
+ with app.app_context():
+     db.create_all()
++    ensure_schema_updates()
+     seed_data()
+     remove_demo_data()
+ 
+diff -ruN -x static -x __pycache__ -x .env a/render.yaml b/render.yaml
+--- a/render.yaml	2026-11-20 05:22:26.959559013 +0000
++++ b/render.yaml	2026-11-20 05:22:27.593805337 +0000
+@@ -16,6 +16,18 @@
+         value: "3.12.0"
+       - key: FLASK_DEBUG
+         value: "0"
++      - key: ADMIN_EMAIL
++        sync: false
++      - key: ADMIN_PASSWORD
++        sync: false
++      - key: PUBLIC_SITE_URL
++        sync: false
++      - key: MAIL_FROM
++        sync: false
++      - key: BREVO_API_KEY
++        sync: false
++      - key: ADMIN_NOTIFY_EMAIL
++        sync: false
+ 
+ databases:
+   - name: faatn-gate-db
+diff -ruN -x static -x __pycache__ -x .env a/templates/admin_trash.html b/templates/admin_trash.html
+--- a/templates/admin_trash.html	1970-01-01 00:00:00.000000000 +0000
++++ b/templates/admin_trash.html	2026-11-20 05:22:27.598730717 +0000
+@@ -0,0 +1,48 @@
++{% extends "dashboard_base.html" %}
++{% block title %}Trash{% endblock %}
++
++{% block dashboard_content %}
++<div class="topbar">
++  <div>
++    <h1>🗑️ Trash</h1>
++    <p class="text-muted">Deleted accounts still go to Trash first; you can restore (with their data) or permanently erase them from here.</p>
++  </div>
++  <a href="{{ url_for('admin_dashboard') }}" class="btn btn-sm btn-outline">← Back to Admin</a>
++</div>
++
++<div class="dash-card">
++  <div class="dash-card-header"><h3>Deleted accounts ({{ items|length }})</h3></div>
++  <div class="dash-card-body">
++    {% if items %}
++    <div class="table-responsive">
++      <table>
++        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Contents</th><th>Deleted</th><th>By</th><th>Actions</th></tr></thead>
++        <tbody>
++          {% for t in items %}
++          <tr>
++            <td><strong>{{ t.full_name }}</strong></td>
++            <td>{{ t.email }}</td>
++            <td><span class="status-pill status-pending">{{ t.role }}</span></td>
++            <td style="font-size:.85rem;">{{ t.summary or '—' }}</td>
++            <td>{{ t.deleted_at.strftime('%d %b %Y') if t.deleted_at else '—' }}</td>
++            <td>{{ t.deleted_by_name or '—' }}</td>
++            <td style="display:flex;gap:.4rem;">
++              <form method="POST" action="{{ url_for('admin_trash_restore', trash_id=t.id) }}">
++                <button type="submit" class="btn btn-sm btn-primary">Restore</button>
++              </form>
++              <form method="POST" action="{{ url_for('admin_trash_delete', trash_id=t.id) }}"
++                    onsubmit="return confirm('Permanently delete {{ t.full_name|e }}? Their data and files will be erased and this cannot be undone.');">
++                <button type="submit" class="btn btn-sm btn-outline" style="color:#b91c1c;border-color:#b91c1c;">Delete permanently</button>
++              </form>
++            </td>
++          </tr>
++          {% endfor %}
++        </tbody>
++      </table>
++    </div>
++    {% else %}
++    <p class="text-muted">Trash is empty.</p>
++    {% endif %}
++  </div>
++</div>
++{% endblock %}
+diff -ruN -x static -x __pycache__ -x .env a/templates/dashboard_admin.html b/templates/dashboard_admin.html
+--- a/templates/dashboard_admin.html	2026-11-20 05:22:27.588727927 +0000
++++ b/templates/dashboard_admin.html	2026-11-20 05:22:27.597945280 +0000
+@@ -2,6 +2,12 @@
+ {% block title %}Admin Dashboard{% endblock %}
+ 
+ {% block dashboard_content %}
++{% if weak_password %}
++<div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:10px;padding:1rem 1.25rem;margin-bottom:1rem;">
++  <strong>⚠️ Your admin password is publicly known.</strong> Anyone who has seen the project code can sign in as you.
++  <a href="{{ url_for('profile') }}#password" style="color:#991b1b;font-weight:700;text-decoration:underline;">Change it now</a>.
++</div>
++{% endif %}
+ <section class="admin-overview-section">
+ <div class="topbar">
+   <div>
+@@ -114,8 +120,52 @@
+   </div>
+ </div>
+ 
++{# ---------- Email status ---------- #}
++<div class="dash-card">
++  <div class="dash-card-header"><h3>Email delivery</h3></div>
++  <div class="dash-card-body">
++    {% if mail_transport %}
++      <p>✅ Email is on (<strong>{{ {'resend': 'Resend API', 'brevo': 'Brevo API', 'smtp': 'SMTP'}[mail_transport] }}</strong>). Password resets, verification and notifications go to members' inboxes.</p>
++      <form method="POST" action="{{ url_for('admin_test_email') }}"><button type="submit" class="btn btn-sm btn-outline">Send a test email to {{ current_user.email }}</button></form>
++    {% else %}
++      <p>⚠️ <strong>Email is not set up yet</strong>, so nobody receives reset links or notifications. In your environment settings add <code>MAIL_FROM</code> plus <code>BREVO_API_KEY</code> (works on Render free), <code>RESEND_API_KEY</code>, or <code>MAIL_SERVER</code>/<code>MAIL_USERNAME</code>/<code>MAIL_PASSWORD</code> (SMTP), then redeploy.</p>
++    {% endif %}
++  </div>
++</div>
++
++{# ---------- Add user ---------- #}
++<div class="dash-card">
++  <div class="dash-card-header"><h3>Add a user</h3></div>
++  <div class="dash-card-body">
++    <form method="POST" action="{{ url_for('admin_create_user') }}" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:.75rem;align-items:end;">
++      <div class="form-group"><label>Full name *</label><input type="text" name="full_name" class="form-control" required></div>
++      <div class="form-group"><label>Email *</label><input type="email" name="email" class="form-control" required></div>
++      <div class="form-group"><label>Phone</label><input type="text" name="phone" class="form-control"></div>
++      <div class="form-group"><label>Role *</label>
++        <select name="role" class="form-control">
++          {% for r in stakeholder_roles %}<option value="{{ r }}">{{ roles.get(r, r|capitalize) }}</option>{% endfor %}
++          {% if can_create_admin %}<option value="admin">{{ roles.get('admin', 'Administrator') }}</option>{% endif %}
++        </select>
++      </div>
++      <div class="form-group"><label>Password (optional)</label><input type="text" name="password" class="form-control" minlength="6" autocomplete="off" placeholder="Blank = generate one"></div>
++      <div class="form-group">
++        <label style="display:flex;gap:.4rem;align-items:center;font-weight:400;"><input type="checkbox" name="send_welcome" value="1" checked> Email them a set-password link</label>
++        <button type="submit" class="btn btn-primary" style="margin-top:.4rem;">Create user</button>
++      </div>
++    </form>
++    <p class="text-muted" style="font-size:.85rem;">The user chooses their own password from the emailed link; the password itself is never emailed. Administrators: <strong>{{ admin_count }} of {{ max_admins }}</strong> used{% if not can_create_admin %} (limit reached, so the Administrator role is hidden){% endif %}.</p>
++  </div>
++</div>
++
+ <div class="dash-card">
+-  <div class="dash-card-header"><h3>Recent Registrations</h3></div>
++  <div class="dash-card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;">
++    <h3>Recent Registrations</h3>
++    <div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;">
++      <form method="GET" style="display:flex;gap:.35rem;"><input type="search" name="q" value="{{ search }}" class="form-control" placeholder="Search name, email, phone" style="font-size:.85rem;padding:.3rem .5rem;"><button class="btn btn-sm btn-outline" type="submit">Search</button></form>
++      <a href="{{ url_for('admin_send_notification') }}" class="btn btn-sm btn-outline">🔔 Send notification</a>
++      <a href="{{ url_for('admin_trash') }}" class="btn btn-sm btn-outline">🗑️ Trash ({{ trash_count }})</a>
++    </div>
++  </div>
+   <div class="dash-card-body">
+     <div class="table-responsive">
+       <table>
+@@ -128,6 +178,7 @@
+             <th>Joined</th>
+             <th>Verified</th>
+             <th>Listing category</th>
++            <th>Actions</th>
+           </tr>
+         </thead>
+         <tbody>
+@@ -149,6 +200,28 @@
+                 <button type="submit" class="btn btn-primary btn-sm">Set</button>
+               </form>
+             </td>
++            <td style="min-width:210px;">
++              {% if u.id != current_user.id %}
++              <details>
++                <summary class="btn btn-sm btn-outline" style="cursor:pointer;display:inline-block;">Reset password</summary>
++                <form method="POST" action="{{ url_for('admin_reset_password', user_id=u.id) }}" style="margin-top:.5rem;display:grid;gap:.35rem;"
++                      onsubmit="return confirm('Reset the password for {{ u.full_name|e }}?');">
++                  <label style="font-size:.8rem;font-weight:400;"><input type="radio" name="mode" value="link" checked> Email a reset link</label>
++                  {% if u.role != 'admin' %}
++                  <label style="font-size:.8rem;font-weight:400;"><input type="radio" name="mode" value="set"> Set a new password</label>
++                  <input type="text" name="new_password" class="form-control" minlength="6" autocomplete="off" placeholder="Blank = generate" style="font-size:.8rem;padding:.25rem;">
++                  {% endif %}
++                  <button type="submit" class="btn btn-sm btn-primary">Apply</button>
++                </form>
++              </details>
++              {% if u.role != 'admin' %}
++              <form method="POST" action="{{ url_for('admin_delete_user', user_id=u.id) }}" style="margin-top:.4rem;"
++                    onsubmit="return confirm('Move {{ u.full_name|e }} to Trash? You can restore them, with their data, from Trash.');">
++                <button type="submit" class="btn btn-sm btn-outline" style="color:#b91c1c;border-color:#b91c1c;">Delete</button>
++              </form>
++              {% endif %}
++              {% else %}—{% endif %}
++            </td>
+           </tr>
+           {% endfor %}
+         </tbody>
+diff -ruN -x static -x __pycache__ -x .env a/templates/dashboard_base.html b/templates/dashboard_base.html
+--- a/templates/dashboard_base.html	2026-11-20 05:22:27.588950228 +0000
++++ b/templates/dashboard_base.html	2026-11-20 05:22:27.597995194 +0000
+@@ -193,6 +193,9 @@
+         <li><a href="{{ url_for('admin_dashboard') }}" class="{% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
+           <span class="icon">⚙️</span> Admin
+         </a></li>
++        <li><a href="{{ url_for('admin_trash') }}" class="{% if request.endpoint == 'admin_trash' %}active{% endif %}">
++          <span class="icon">🗑️</span> Trash
++        </a></li>
+         {% endif %}
+       </ul>
+ 
+diff -ruN -x static -x __pycache__ -x .env a/templates/events.html b/templates/events.html
+--- a/templates/events.html	2026-11-20 05:22:27.589087002 +0000
++++ b/templates/events.html	2026-11-20 05:22:27.598044745 +0000
+@@ -51,6 +51,9 @@
+           <label>Image</label>
+           <input type="file" name="image" class="form-control" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp">
+         </div>
++        <label style="display:flex;gap:.5rem;align-items:center;margin:.75rem 0;font-weight:400;">
++          <input type="checkbox" name="notify_members" value="1" checked> Also email this to members who allow update emails
++        </label>
+         <button type="submit" class="btn btn-primary">Publish</button>
+       </form>
+     </div>
+diff -ruN -x static -x __pycache__ -x .env a/templates/events_news_public.html b/templates/events_news_public.html
+--- a/templates/events_news_public.html	2026-11-20 05:22:27.589208302 +0000
++++ b/templates/events_news_public.html	2026-11-20 05:22:27.598086369 +0000
+@@ -49,6 +49,9 @@
+           <label>Image</label>
+           <input type="file" name="image" class="form-control" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp">
+         </div>
++        <label style="display:flex;gap:.5rem;align-items:center;margin:.75rem 0;font-weight:400;">
++          <input type="checkbox" name="notify_members" value="1" checked> Also email this to members who allow update emails
++        </label>
+         <button type="submit" class="btn btn-primary">Publish</button>
+       </form>
+     </div>
+diff -ruN -x static -x __pycache__ -x .env a/templates/forgot_password.html b/templates/forgot_password.html
+--- a/templates/forgot_password.html	2026-11-20 05:22:27.589380803 +0000
++++ b/templates/forgot_password.html	2026-11-20 05:22:27.598153831 +0000
+@@ -5,7 +5,7 @@
+   <div class="auth-card">
+     <div class="auth-header">
+       <h1>Forgot <span class="gradient-text">Password</span></h1>
+-      <p>Enter your email and we’ll generate a reset link (demo mode shows the link on screen)</p>
++      <p>Enter your email and we’ll email you a link to choose a new password</p>
+     </div>
+     <form method="POST">
+       <div class="form-group">
+diff -ruN -x static -x __pycache__ -x .env a/templates/profile.html b/templates/profile.html
+--- a/templates/profile.html	2026-11-20 05:22:27.590680716 +0000
++++ b/templates/profile.html	2026-11-20 05:22:27.598542878 +0000
+@@ -111,9 +111,28 @@
+           <textarea name="portfolio" class="form-control" rows="4">{{ current_user.portfolio or '' }}</textarea>
+         </div>
+ 
++        <div class="form-group">
++          <label style="display:flex;gap:.5rem;align-items:center;font-weight:400;">
++            <input type="checkbox" name="email_notifications" value="1" {% if current_user.email_notifications is not false %}checked{% endif %}>
++            Email me updates and notifications (password and security emails are always sent)
++          </label>
++        </div>
++
+         <button type="submit" class="btn btn-primary">Save Profile</button>
+       </form>
+     </div>
+   </div>
++
++  <div class="dash-card" id="password" style="margin-top:1.5rem;">
++    <div class="dash-card-header"><h3>Change password</h3></div>
++    <div class="dash-card-body">
++      <form method="POST" action="{{ url_for('change_password') }}" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.75rem;align-items:end;">
++        <div class="form-group"><label>Current password</label><input type="password" name="current_password" class="form-control" required autocomplete="current-password"></div>
++        <div class="form-group"><label>New password (min 8 characters)</label><input type="password" name="new_password" class="form-control" minlength="8" required autocomplete="new-password"></div>
++        <div class="form-group"><label>Confirm new password</label><input type="password" name="confirm_password" class="form-control" minlength="8" required autocomplete="new-password"></div>
++        <div class="form-group"><button type="submit" class="btn btn-primary">Change password</button></div>
++      </form>
++    </div>
++  </div>
+ </div>
+ {% endblock %}

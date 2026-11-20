@@ -69,8 +69,16 @@ export PORT=5000
 export FLASK_DEBUG=1
 ```
 
-Admin credentials are **not** displayed on the login page or any public page.
-Set `ADMIN_EMAIL` / `ADMIN_PASSWORD` before the first run so the seed creates your private admin account.
+Admin credentials are **not** displayed on the login page or any public page, and there is **no default admin password**.
+Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` before the first run (or run `flask create-admin you@example.com`) so your private admin account is created.
+At most **2** administrators are allowed. An old `admin@faatn.ng` account that still uses the public default password is removed automatically once another admin exists.
+
+### Email (password resets, verification, notifications, announcements)
+
+Set `MAIL_FROM` plus **one** of: `BREVO_API_KEY`, `RESEND_API_KEY`, or `MAIL_SERVER` (+ `MAIL_USERNAME` / `MAIL_PASSWORD`, e.g. a Gmail *App password*).
+Render's free plan blocks SMTP ports, so use `BREVO_API_KEY` or `RESEND_API_KEY` there. Check it with **Admin > Email delivery > Send a test email**.
+Optional: `ADMIN_NOTIFY_EMAIL` (alert for new sign-ups and help requests), `PUBLIC_SITE_URL` (the https address used in email links).
+Members can opt out of update emails from their profile or any email's unsubscribe link; password and security emails are always sent.
 
 ---
 
@@ -81,7 +89,6 @@ faatn_gate_clean/
 ├── app.py                 # Models, routes, seed data
 ├── requirements.txt
 ├── README.md
-├── startup.sh             # Optional process helper
 ├── static/
 │   ├── css/style.css      # Design system (glass + 3D)
 │   ├── images/

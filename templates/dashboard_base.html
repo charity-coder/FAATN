@@ -193,6 +193,9 @@
         <li><a href="{{ url_for('admin_dashboard') }}" class="{% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
           <span class="icon">⚙️</span> Admin
         </a></li>
+        <li><a href="{{ url_for('admin_trash') }}" class="{% if request.endpoint == 'admin_trash' %}active{% endif %}">
+          <span class="icon">🗑️</span> Trash
+        </a></li>
         {% endif %}
       </ul>
 

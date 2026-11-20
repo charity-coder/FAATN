@@ -1,0 +1,48 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Trash{% endblock %}
+
+{% block dashboard_content %}
+<div class="topbar">
+  <div>
+    <h1>🗑️ Trash</h1>
+    <p class="text-muted">Deleted accounts still go to Trash first; you can restore (with their data) or permanently erase them from here.</p>
+  </div>
+  <a href="{{ url_for('admin_dashboard') }}" class="btn btn-sm btn-outline">← Back to Admin</a>
+</div>
+
+<div class="dash-card">
+  <div class="dash-card-header"><h3>Deleted accounts ({{ items|length }})</h3></div>
+  <div class="dash-card-body">
+    {% if items %}
+    <div class="table-responsive">
+      <table>
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Contents</th><th>Deleted</th><th>By</th><th>Actions</th></tr></thead>
+        <tbody>
+          {% for t in items %}
+          <tr>
+            <td><strong>{{ t.full_name }}</strong></td>
+            <td>{{ t.email }}</td>
+            <td><span class="status-pill status-pending">{{ t.role }}</span></td>
+            <td style="font-size:.85rem;">{{ t.summary or '—' }}</td>
+            <td>{{ t.deleted_at.strftime('%d %b %Y') if t.deleted_at else '—' }}</td>
+            <td>{{ t.deleted_by_name or '—' }}</td>
+            <td style="display:flex;gap:.4rem;">
+              <form method="POST" action="{{ url_for('admin_trash_restore', trash_id=t.id) }}">
+                <button type="submit" class="btn btn-sm btn-primary">Restore</button>
+              </form>
+              <form method="POST" action="{{ url_for('admin_trash_delete', trash_id=t.id) }}"
+                    onsubmit="return confirm('Permanently delete {{ t.full_name|e }}? Their data and files will be erased and this cannot be undone.');">
+                <button type="submit" class="btn btn-sm btn-outline" style="color:#b91c1c;border-color:#b91c1c;">Delete permanently</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted">Trash is empty.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

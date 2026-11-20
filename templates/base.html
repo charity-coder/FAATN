@@ -7,7 +7,7 @@
 
   <!-- Primary SEO -->
   <meta name="description" content="{% block meta_description %}FAATN-GATE is the official digital platform of the Federation of Association of Artisans and Technicians of Nigeria (FAATN). Register artisans and technicians, access training, innovation support, contracts, and national opportunities across Nigeria.{% endblock %}">
-  <meta name="keywords" content="{% block meta_keywords %}FAATN, FAATN-GATE, Federation of Association of Artisans and Technicians of Nigeria, Nigerian artisans, Nigerian technicians, artisan registration Nigeria, technician training Nigeria, skills development Nigeria, indigenous technology, technology transfer, renewable energy artisans, innovation commercialisation Nigeria, find artisan Nigeria, find technician Nigeria, vocational skills Nigeria, TVET partnership, local manufacturing Nigeria, CAC IT 103696{% endblock %}">
+  <meta name="keywords" content="{% block meta_keywords %}FAATN, FAATN-GATE, Federation of Association of Artisans and Technicians of Nigeria, Nigerian artisans, Nigerian technicians, artisan registration, Nigeria technician, training Nigeria artisans, artisans and technicals skills development Nigeria, indigenous technology and innovation, technology transfer in nigeria, renewable energy in nigeria, artisans, innovation commercialisation Nigeria, find artisan Nigeria, find technician Nigeria, vocational skills Nigeria, TVET partnership, local manufacturing Nigeria, african innovation,west african innovation,nigeria technology{% endblock %}">
   <meta name="author" content="Federation of Association of Artisans and Technicians of Nigeria (FAATN)">
   <meta name="robots" content="{% block meta_robots %}index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1{% endblock %}">
   <meta name="googlebot" content="index, follow">
@@ -48,65 +48,85 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Serif+Display:ital@0;1&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   {% block extra_css %}{% endblock %}
-
-  <!-- JSON-LD Structured Data (Schema.org) -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "Organization",
-        "@id": "{{ request.url_root }}#organization",
-        "name": "Federation of Association of Artisans and Technicians of Nigeria",
-        "alternateName": ["FAATN", "FAATN-GATE"],
-        "url": {{ request.url_root.rstrip('/')|tojson }},
-        "logo": {
-          "@type": "ImageObject",
-          "url": {{ url_for('static', filename='images/logo/faatn_logo_256.png', _external=True)|tojson }}
-        },
-        "image": {{ url_for('static', filename='images/logo/faatn_logo_256.png', _external=True)|tojson }},
-        "description": "National platform for Nigerian artisans and technicians promoting indigenous technology, skills, innovation and industrial development.",
-        "email": "faatnigeria@gmail.com",
-        "telephone": ["+2349154968109", "+2348036771117"],
-        "address": {
-          "@type": "PostalAddress",
-          "streetAddress": "Green Station, 5 Amiyi/Hospital Road, Umuaka",
-          "addressLocality": "Njaba",
-          "addressRegion": "Imo State",
-          "addressCountry": "NG"
-        },
-        "foundingDate": "2017",
-        "identifier": "CAC/IT/103696",
-        "sameAs": [
-          "https://www.facebook.com/profile.php?id=61595624519691",
-          "https://x.com/faatnigeria",
-          "https://instagram.com/faatnigeria",
-          "https://www.linkedin.com/in/federation-of-association-of-artisans-and-technicians-of-nigeria-faatn",
-          "https://youtube.com/@faatnigeria",
-          "https://wa.me/2349154968109"
-        ],
-        "contactPoint": {
-          "@type": "ContactPoint",
-          "telephone": "+2349154968109",
-          "contactType": "customer service",
-          "areaServed": "NG",
-          "availableLanguage": ["English"]
-        }
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="/static/favicon/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/static/favicon/favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/static/favicon/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#052e16">
+  {% set site_url = request.url_root.rstrip('/') %}
+{% set site_url = request.url_root.rstrip('/') %}
+<!-- JSON-LD Structured Data (Schema.org) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": {{ (site_url ~ '/#organization')|tojson }},
+      "name": "Federation of Association of Artisans and Technicians of Nigeria",
+      "alternateName": [
+        "FAATN",
+        "FAATN Nigeria",
+        "FAATN Federation",
+        "Federation of Artisans and Technicians of Nigeria",
+        "Artisans and Technicians Federation of Nigeria",
+        "Federation of Association of Artisans and Technicians of Nigeria (FAATN)",
+        "faatnigeria"
+      ],
+      "url": {{ (site_url ~ '/')|tojson }},
+      "logo": {
+        "@type": "ImageObject",
+        "url": {{ url_for('static', filename='images/logo/faatn_logo_256.png', _external=True)|tojson }}
       },
-      {
-        "@type": "WebSite",
-        "@id": "{{ request.url_root }}#website",
-        "url": {{ request.url_root.rstrip('/')|tojson }},
-        "name": "FAATN-GATE",
-        "description": "Gateway for Artisans and Technical Experts — People → Skills → Innovation → Opportunities → Impact",
-        "publisher": { "@id": "{{ request.url_root }}#organization" },
-        "inLanguage": "en-NG"
+      "image": {{ url_for('static', filename='images/logo/faatn_logo_256.png', _external=True)|tojson }},
+      "description": "National platform for Nigerian artisans and technicians promoting indigenous technology, skills, innovation and industrial development.",
+      "email": "faatnigeria@gmail.com",
+      "telephone": ["+2349154968109", "+2348036771117"],
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Green Station, 5 Amiyi/Hospital Road, Umuaka",
+        "addressLocality": "Njaba",
+        "addressRegion": "Imo State",
+        "addressCountry": "NG"
+      },
+      "foundingDate": "2017",
+      "identifier": "CAC/IT/103696",
+      "sameAs": [
+        "https://x.com/faatnigeria",
+        "https://instagram.com/faatnigeria",
+        "https://youtube.com/@faatnigeria"
+      ],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "telephone": "+2349154968109",
+        "contactType": "customer service",
+        "areaServed": "NG",
+        "availableLanguage": ["English"]
       }
-    ]
-  }
-  </script>
-  {% block structured_data %}{% endblock %}
-
+    },
+    {
+      "@type": "WebSite",
+      "@id": {{ (site_url ~ '/#website')|tojson }},
+      "url": {{ (site_url ~ '/')|tojson }},
+      "name": "FAATN-GATE",
+      "alternateName": [
+        "FAATN Gate",
+        "FAATN Gateway",
+        "FAATNGATE",
+        "FAATN-GATE Nigeria",
+        "FAATN Portal",
+        "Gateway for Artisans and Technical Experts"
+      ],
+      "description": "Gateway for Artisans and Technical Experts: connecting people, skills, innovation, opportunities and impact.",
+      "publisher": { "@id": {{ (site_url ~ '/#organization')|tojson }} },
+      "inLanguage": "en-NG"
+    }
+  ]
+}
+</script>
+{% block structured_data %}{% endblock %}
   <style>
     /* Critical mobile header – cannot be overridden easily */
     @media (max-width: 1100px) {

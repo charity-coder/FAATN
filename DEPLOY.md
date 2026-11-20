@@ -44,6 +44,9 @@ git push -u origin main
 | `DATABASE_URL` | Copy **Internal Database URL** from the Postgres service |
 | `SECRET_KEY` | Any long random string (Render can auto-generate) |
 | `FLASK_DEBUG` | `0` |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Your private admin login (required; there is no default) |
+| `PUBLIC_SITE_URL` | `https://your-site` (used in email links) |
+| `MAIL_FROM` + `BREVO_API_KEY` | Email sender and key (see below) |
 
 > If Render gives `postgres://...`, the app converts it to `postgresql://` automatically.
 
@@ -51,12 +54,11 @@ git push -u origin main
 Click **Create Web Service**. Wait for the build to finish.  
 Open the URL Render gives you (e.g. `https://faatn-gate.onrender.com`).
 
-### 5. Demo logins (after first deploy)
-| Role | Email | Password |
-|------|--------|----------|
-| Artisan | artisan@demo.ng | Artisan@123 |
-| Technician | tech@demo.ng | Tech@123 |
-| Admin | admin@faatn.ng | Admin@FAATN2026 |
+### 5. First administrator
+There are no demo logins. Before the first deploy, set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in **Render > Environment** (choose a strong password of your own). The admin account is created on the first start. On an existing site, the old `admin@faatn.ng` account is removed automatically if it still has the public default password and your new admin exists.
+
+### 6. Email
+Render's free plan blocks SMTP ports (25/465/587), so plain Gmail SMTP will not work there. Use an HTTPS provider: set `MAIL_FROM` and `BREVO_API_KEY` (or `RESEND_API_KEY`). Then sign in and press **Admin > Email delivery > Send a test email**.
 
 ---
 

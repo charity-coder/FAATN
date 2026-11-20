@@ -2,6 +2,12 @@
 {% block title %}Admin Dashboard{% endblock %}
 
 {% block dashboard_content %}
+{% if weak_password %}
+<div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:10px;padding:1rem 1.25rem;margin-bottom:1rem;">
+  <strong>⚠️ Your admin password is publicly known.</strong> Anyone who has seen the project code can sign in as you.
+  <a href="{{ url_for('profile') }}#password" style="color:#991b1b;font-weight:700;text-decoration:underline;">Change it now</a>.
+</div>
+{% endif %}
 <section class="admin-overview-section">
 <div class="topbar">
   <div>
@@ -114,8 +120,52 @@
   </div>
 </div>
 
+{# ---------- Email status ---------- #}
 <div class="dash-card">
-  <div class="dash-card-header"><h3>Recent Registrations</h3></div>
+  <div class="dash-card-header"><h3>Email delivery</h3></div>
+  <div class="dash-card-body">
+    {% if mail_transport %}
+      <p>✅ Email is on (<strong>{{ {'resend': 'Resend API', 'brevo': 'Brevo API', 'smtp': 'SMTP'}[mail_transport] }}</strong>). Password resets, verification and notifications go to members' inboxes.</p>
+      <form method="POST" action="{{ url_for('admin_test_email') }}"><button type="submit" class="btn btn-sm btn-outline">Send a test email to {{ current_user.email }}</button></form>
+    {% else %}
+      <p>⚠️ <strong>Email is not set up yet</strong>, so nobody receives reset links or notifications. In your environment settings add <code>MAIL_FROM</code> plus <code>BREVO_API_KEY</code> (works on Render free), <code>RESEND_API_KEY</code>, or <code>MAIL_SERVER</code>/<code>MAIL_USERNAME</code>/<code>MAIL_PASSWORD</code> (SMTP), then redeploy.</p>
+    {% endif %}
+  </div>
+</div>
+
+{# ---------- Add user ---------- #}
+<div class="dash-card">
+  <div class="dash-card-header"><h3>Add a user</h3></div>
+  <div class="dash-card-body">
+    <form method="POST" action="{{ url_for('admin_create_user') }}" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:.75rem;align-items:end;">
+      <div class="form-group"><label>Full name *</label><input type="text" name="full_name" class="form-control" required></div>
+      <div class="form-group"><label>Email *</label><input type="email" name="email" class="form-control" required></div>
+      <div class="form-group"><label>Phone</label><input type="text" name="phone" class="form-control"></div>
+      <div class="form-group"><label>Role *</label>
+        <select name="role" class="form-control">
+          {% for r in stakeholder_roles %}<option value="{{ r }}">{{ roles.get(r, r|capitalize) }}</option>{% endfor %}
+          {% if can_create_admin %}<option value="admin">{{ roles.get('admin', 'Administrator') }}</option>{% endif %}
+        </select>
+      </div>
+      <div class="form-group"><label>Password (optional)</label><input type="text" name="password" class="form-control" minlength="6" autocomplete="off" placeholder="Blank = generate one"></div>
+      <div class="form-group">
+        <label style="display:flex;gap:.4rem;align-items:center;font-weight:400;"><input type="checkbox" name="send_welcome" value="1" checked> Email them a set-password link</label>
+        <button type="submit" class="btn btn-primary" style="margin-top:.4rem;">Create user</button>
+      </div>
+    </form>
+    <p class="text-muted" style="font-size:.85rem;">The user chooses their own password from the emailed link; the password itself is never emailed. Administrators: <strong>{{ admin_count }} of {{ max_admins }}</strong> used{% if not can_create_admin %} (limit reached, so the Administrator role is hidden){% endif %}.</p>
+  </div>
+</div>
+
+<div class="dash-card">
+  <div class="dash-card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;">
+    <h3>Recent Registrations</h3>
+    <div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;">
+      <form method="GET" style="display:flex;gap:.35rem;"><input type="search" name="q" value="{{ search }}" class="form-control" placeholder="Search name, email, phone" style="font-size:.85rem;padding:.3rem .5rem;"><button class="btn btn-sm btn-outline" type="submit">Search</button></form>
+      <a href="{{ url_for('admin_send_notification') }}" class="btn btn-sm btn-outline">🔔 Send notification</a>
+      <a href="{{ url_for('admin_trash') }}" class="btn btn-sm btn-outline">🗑️ Trash ({{ trash_count }})</a>
+    </div>
+  </div>
   <div class="dash-card-body">
     <div class="table-responsive">
       <table>
@@ -128,6 +178,7 @@
             <th>Joined</th>
             <th>Verified</th>
             <th>Listing category</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -148,6 +199,28 @@
                 </select>
                 <button type="submit" class="btn btn-primary btn-sm">Set</button>
               </form>
+            </td>
+            <td style="min-width:210px;">
+              {% if u.id != current_user.id %}
+              <details>
+                <summary class="btn btn-sm btn-outline" style="cursor:pointer;display:inline-block;">Reset password</summary>
+                <form method="POST" action="{{ url_for('admin_reset_password', user_id=u.id) }}" style="margin-top:.5rem;display:grid;gap:.35rem;"
+                      onsubmit="return confirm('Reset the password for {{ u.full_name|e }}?');">
+                  <label style="font-size:.8rem;font-weight:400;"><input type="radio" name="mode" value="link" checked> Email a reset link</label>
+                  {% if u.role != 'admin' %}
+                  <label style="font-size:.8rem;font-weight:400;"><input type="radio" name="mode" value="set"> Set a new password</label>
+                  <input type="text" name="new_password" class="form-control" minlength="6" autocomplete="off" placeholder="Blank = generate" style="font-size:.8rem;padding:.25rem;">
+                  {% endif %}
+                  <button type="submit" class="btn btn-sm btn-primary">Apply</button>
+                </form>
+              </details>
+              {% if u.role != 'admin' %}
+              <form method="POST" action="{{ url_for('admin_delete_user', user_id=u.id) }}" style="margin-top:.4rem;"
+                    onsubmit="return confirm('Move {{ u.full_name|e }} to Trash? You can restore them, with their data, from Trash.');">
+                <button type="submit" class="btn btn-sm btn-outline" style="color:#b91c1c;border-color:#b91c1c;">Delete</button>
+              </form>
+              {% endif %}
+              {% else %}—{% endif %}
             </td>
           </tr>
           {% endfor %}

@@ -1,11 +1,24 @@
-from flask import Flask, render_template, redirect, url_for, flash, request, jsonify
+from flask import Flask, render_template, redirect, url_for, flash, request, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from datetime import datetime, timedelta
+from datetime import datetime, date, timedelta
 import os
 import secrets
+import shutil
+import json
+import smtplib
+import threading
+import logging
+import urllib.request
+from email.message import EmailMessage
+from email.utils import formataddr
+from html import escape as html_escape
+import urllib.error
+import click
+from itsdangerous import URLSafeSerializer, BadSignature
+from email_validator import validate_email, EmailNotValidError
 
 try:
     from dotenv import load_dotenv
@@ -193,8 +206,12 @@ ROLES = {
 MEMBER_ROLES = ('artisan', 'technician', 'engineer')  # member portal + directory + chat
 STAKEHOLDER_ROLES = MEMBER_ROLES + ('institution', 'government', 'industry', 'partner', 'supplier')
 
+MAX_ADMINS = 2  # hard limit: at most two Administrator accounts
 MAX_NEWS_WORDS = 2000
 
+# Trash lives OUTSIDE /static so deleted members' files are never publicly reachable
+app.config['TRASH_FOLDER'] = os.environ.get('TRASH_FOLDER') or os.path.join(BASE_DIR, 'trash')
+os.makedirs(app.config['TRASH_FOLDER'], exist_ok=True)
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['CHAT_UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['BG_UPLOAD_FOLDER'], exist_ok=True)
@@ -253,6 +270,15 @@ def admin_required(fn):
     return role_required('admin')(fn)
 
 
+def admin_count():
+    """Number of accounts with role=admin."""
+    return User.query.filter_by(role='admin').count()
+
+
+def can_create_admin():
+    return admin_count() < MAX_ADMINS
+
+
 def word_count(text):
     if not text:
         return 0
@@ -262,6 +288,311 @@ db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 login_manager.login_message_category = 'info'
+
+
+# ==================== EMAIL ====================
+# Configure ONE of these on Render > Environment:
+#
+#   A) SMTP (Gmail app password, Brevo, Zoho, your host's mail server, ...)
+#        MAIL_SERVER=smtp.example.com   MAIL_PORT=587   MAIL_USERNAME=...   MAIL_PASSWORD=...
+#        MAIL_FROM=no-reply@yourdomain.ng   MAIL_USE_TLS=1  (or MAIL_USE_SSL=1 with port 465)
+#
+#   B) Resend HTTP API (works where outbound SMTP ports are blocked)
+#        RESEND_API_KEY=re_xxx   MAIL_FROM=no-reply@yourdomain.ng   (domain must be verified in Resend)
+#
+# Optional: MAIL_FROM_NAME (default "FAATN-GATE"), VISIT_EMAIL=0 to turn off visitor e-mails
+# (in-app visitor notifications stay on).
+MAIL_SERVER = os.environ.get('MAIL_SERVER', '').strip()
+MAIL_PORT = int(os.environ.get('MAIL_PORT', '587') or 587)
+MAIL_USERNAME = os.environ.get('MAIL_USERNAME', '').strip()
+MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD', '')
+MAIL_USE_SSL = os.environ.get('MAIL_USE_SSL', '0') == '1'
+MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', '1') == '1'
+MAIL_FROM = (os.environ.get('MAIL_FROM', '') or MAIL_USERNAME).strip()
+MAIL_FROM_NAME = os.environ.get('MAIL_FROM_NAME', 'FAATN-GATE').strip()
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '').strip()
+BREVO_API_KEY = os.environ.get('BREVO_API_KEY', '').strip()      # HTTPS API; works on Render free, accepts a single verified sender
+ADMIN_NOTIFY_EMAIL = os.environ.get('ADMIN_NOTIFY_EMAIL', '').strip()  # optional: alert for new sign-ups / help requests
+VISIT_EMAIL = os.environ.get('VISIT_EMAIL', '1') != '0'
+
+mail_log = logging.getLogger('faatn.mail')
+
+
+def mail_configured():
+    return bool(MAIL_FROM and (RESEND_API_KEY or BREVO_API_KEY or MAIL_SERVER))
+
+
+def mail_transport():
+    """Which sender is active: 'resend', 'brevo', 'smtp' or None."""
+    if not mail_configured():
+        return None
+    return 'resend' if RESEND_API_KEY else 'brevo' if BREVO_API_KEY else 'smtp'
+
+
+def is_valid_email(addr):
+    if not addr or '\n' in addr or '\r' in addr:
+        return False
+    try:
+        validate_email(addr, check_deliverability=False)
+        return True
+    except EmailNotValidError:
+        return False
+
+
+def _deliver_email_raw(to_addr, subject, text_body, html_body, unsubscribe_url=None):
+    """Blocking send. RAISES on any failure (callers decide what to do)."""
+    subject = ' '.join(str(subject).split())[:200]          # no line breaks -> no header injection
+    if RESEND_API_KEY:
+        data = {
+            'from': formataddr((MAIL_FROM_NAME, MAIL_FROM)),
+            'to': [to_addr], 'subject': subject, 'text': text_body, 'html': html_body or None,
+        }
+        if unsubscribe_url:
+            data['headers'] = {'List-Unsubscribe': f'<{unsubscribe_url}>'}
+        req = urllib.request.Request(
+            'https://api.resend.com/emails', data=json.dumps(data).encode('utf-8'), method='POST',
+            headers={'Authorization': f'Bearer {RESEND_API_KEY}', 'Content-Type': 'application/json'})
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            resp.read()
+    elif BREVO_API_KEY:
+        data = {'sender': {'name': MAIL_FROM_NAME, 'email': MAIL_FROM}, 'to': [{'email': to_addr}],
+                'subject': subject, 'textContent': text_body}
+        if html_body:
+            data['htmlContent'] = html_body
+        if unsubscribe_url:
+            data['headers'] = {'List-Unsubscribe': f'<{unsubscribe_url}>'}
+        req = urllib.request.Request(
+            'https://api.brevo.com/v3/smtp/email', data=json.dumps(data).encode('utf-8'), method='POST',
+            headers={'api-key': BREVO_API_KEY, 'accept': 'application/json', 'content-type': 'application/json'})
+        try:
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                resp.read()
+        except urllib.error.HTTPError as exc:
+            raise RuntimeError(f'Brevo rejected the email (HTTP {exc.code}): {exc.read().decode("utf-8", "ignore")[:200]}') from None
+    else:
+        msg = EmailMessage()
+        msg['From'] = formataddr((MAIL_FROM_NAME, MAIL_FROM))
+        msg['To'] = to_addr
+        msg['Subject'] = subject
+        if unsubscribe_url:
+            msg['List-Unsubscribe'] = f'<{unsubscribe_url}>'
+        msg.set_content(text_body)
+        if html_body:
+            msg.add_alternative(html_body, subtype='html')
+        if MAIL_USE_SSL:
+            server = smtplib.SMTP_SSL(MAIL_SERVER, MAIL_PORT, timeout=20)
+        else:
+            server = smtplib.SMTP(MAIL_SERVER, MAIL_PORT, timeout=20)
+        try:
+            if MAIL_USE_TLS and not MAIL_USE_SSL:
+                server.starttls()
+            if MAIL_USERNAME:
+                server.login(MAIL_USERNAME, MAIL_PASSWORD)
+            server.send_message(msg)
+        finally:
+            try:
+                server.quit()
+            except Exception:
+                pass
+
+
+def _deliver_email(to_addr, subject, text_body, html_body, unsubscribe_url=None):
+    """Blocking send used by background threads; never raises."""
+    try:
+        _deliver_email_raw(to_addr, subject, text_body, html_body, unsubscribe_url)
+        mail_log.info('Email sent to %s (%s)', to_addr, subject)
+    except Exception as exc:  # network / auth / rejected recipient
+        mail_log.error('Email to %s failed: %s', to_addr, exc)
+        print(f'[mail] FAILED to send "{subject}" to {to_addr}: {exc}', flush=True)
+
+
+def send_email_now(to_addr, subject, text_body, html_body=None):
+    """Send immediately and report the reason on failure (for the admin "test email" button)."""
+    if not mail_configured():
+        return False, 'Email is not configured (set BREVO_API_KEY, RESEND_API_KEY or MAIL_SERVER, plus MAIL_FROM).'
+    if not is_valid_email(to_addr):
+        return False, f'Invalid recipient address: {to_addr!r}'
+    try:
+        _deliver_email_raw(to_addr, subject, text_body, html_body)
+        return True, None
+    except Exception as exc:
+        return False, f'{type(exc).__name__}: {exc}'
+
+
+def send_email(to_addr, subject, text_body, html_body=None, unsubscribe_url=None):
+    """Queue an email in a background thread so the request is not slowed down.
+
+    Returns False when mail is not configured or the address is not valid.
+    """
+    if not to_addr or not mail_configured() or not is_valid_email(to_addr):
+        return False
+    if app.testing:
+        _deliver_email(to_addr, subject, text_body, html_body, unsubscribe_url)
+    else:
+        threading.Thread(target=_deliver_email, args=(to_addr, subject, text_body, html_body, unsubscribe_url),
+                         daemon=True).start()
+    return True
+
+
+def send_many(jobs):
+    """jobs = list of kwargs for _deliver_email. One background thread, sent one by one."""
+    if not jobs or not mail_configured():
+        return 0
+
+    def run():
+        for j in jobs:
+            _deliver_email(**j)
+    if app.testing:
+        run()
+    else:
+        threading.Thread(target=run, daemon=True).start()
+    return len(jobs)
+
+
+def external_url(endpoint, **values):
+    """Absolute URL; uses PUBLIC_SITE_URL when set (correct https domain behind Render's proxy)."""
+    path = url_for(endpoint, **values)
+    base = os.environ.get('PUBLIC_SITE_URL', '').strip().rstrip('/')
+    if base:
+        return base + path
+    return url_for(endpoint, _external=True, **values)
+
+
+def _email_shell(heading, body_html, button_label=None, button_url=None, unsubscribe_url=None):
+    button = ''
+    if button_label and button_url:
+        button = (
+            f'<p style="margin:24px 0;"><a href="{html_escape(button_url)}" '
+            'style="background:#0d7a4f;color:#ffffff;padding:12px 22px;border-radius:8px;'
+            f'text-decoration:none;font-weight:600;display:inline-block;">{html_escape(button_label)}</a></p>'
+        )
+    unsub = ''
+    if unsubscribe_url:
+        unsub = (f'<br><a href="{html_escape(unsubscribe_url)}" style="color:#6b7280;">'
+                 'Unsubscribe from update emails</a> (password and security emails are always sent)')
+    return (
+        '<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;'
+        'border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">'
+        '<div style="background:#0d7a4f;color:#fff;padding:16px 24px;font-size:18px;font-weight:700;">FAATN-GATE</div>'
+        f'<div style="padding:24px;color:#1f2937;line-height:1.55;"><h2 style="margin-top:0;color:#065f3c;">{html_escape(heading)}</h2>'
+        f'{body_html}{button}</div>'
+        '<div style="background:#f9fafb;color:#6b7280;padding:12px 24px;font-size:12px;">'
+        f'Federation of Artisans and Technicians of Nigeria{unsub}</div></div>'
+    )
+
+
+def send_verification_email(user, token):
+    """E-mail the verification link to a registered user. Returns True if queued."""
+    link = external_url('verify_email', token=token)
+    name = user.full_name or 'there'
+    text = (
+        f'Hello {name},\n\n'
+        'Welcome to FAATN-GATE. Please verify your email address by opening this link:\n\n'
+        f'{link}\n\n'
+        'If you did not create this account, you can ignore this message.\n\n'
+        '— FAATN-GATE'
+    )
+    html = _email_shell(
+        'Verify your email address',
+        f'<p>Hello {html_escape(name)},</p>'
+        '<p>Welcome to FAATN-GATE. Please confirm your email address to finish setting up your account.</p>',
+        'Verify my email', link,
+    ) + f'<p style="font-size:12px;color:#6b7280;">Or copy this link: {html_escape(link)}</p>'
+    sent = send_email(user.email, 'Verify your FAATN-GATE email address', text, html)
+    if not sent:
+        # Mail is not configured: keep the link in the server log only (never show it on the page).
+        print(f'[mail] Email not configured. Verification link for {user.email}: {link}', flush=True)
+    return sent
+
+
+
+def send_reset_email(user, token):
+    """E-mail the password-reset link (valid 2 hours). Returns True if queued."""
+    link = external_url('reset_password', token=token)
+    name = user.full_name or 'there'
+    text = (
+        f'Hello {name},\n\n'
+        'We received a request to reset your FAATN-GATE password. Open this link within 2 hours:\n\n'
+        f'{link}\n\n'
+        'If you did not ask for this, ignore this message - your password stays the same.\n\n'
+        '- FAATN-GATE'
+    )
+    html = _email_shell(
+        'Reset your password',
+        f'<p>Hello {html_escape(name)},</p>'
+        '<p>We received a request to reset your FAATN-GATE password. The link works for 2 hours.</p>'
+        '<p>If you did not ask for this, ignore this email - your password stays the same.</p>',
+        'Reset my password', link,
+    ) + f'<p style="font-size:12px;color:#6b7280;">Or copy this link: {html_escape(link)}</p>'
+    sent = send_email(user.email, 'Reset your FAATN-GATE password', text, html)
+    if not sent:
+        print(f'[mail] Email not configured. Reset link for {user.email}: {link}', flush=True)
+    return sent
+
+
+def _unsub_serializer():
+    return URLSafeSerializer(app.config['SECRET_KEY'], salt='faatn-email-unsub')
+
+
+def unsubscribe_token(user_id):
+    return _unsub_serializer().dumps(user_id)
+
+
+def unsubscribe_link(user_id):
+    return external_url('email_unsubscribe', token=unsubscribe_token(user_id))
+
+
+def send_password_changed_email(user, by_admin=False):
+    """Security notice. NEVER contains the password itself."""
+    who = 'a FAATN administrator' if by_admin else 'you'
+    link = external_url('login')
+    text = (f'Hello {user.full_name or "there"},\n\nThe password for your FAATN-GATE account was just changed by {who}.\n\n'
+            'If this was not expected, contact FAATN at faatnigeria@gmail.com straight away.\n\n- FAATN-GATE')
+    html = _email_shell('Your password was changed',
+                        f'<p>Hello {html_escape(user.full_name or "there")},</p>'
+                        f'<p>The password for your FAATN-GATE account was just changed by {html_escape(who)}.</p>'
+                        '<p>If this was not expected, contact FAATN at faatnigeria@gmail.com straight away.</p>',
+                        'Sign in', link)
+    return send_email(user.email, 'Your FAATN-GATE password was changed', text, html)
+
+
+def send_welcome_email(user, token, hours):
+    """Admin-created account: the user chooses their own password through a one-time link."""
+    link = external_url('reset_password', token=token)
+    text = (f'Hello {user.full_name},\n\nA FAATN administrator created a {ROLES.get(user.role, user.role)} account for you '
+            f'on FAATN-GATE ({user.email}).\n\nChoose your password here (valid {hours} hours):\n{link}\n\n- FAATN-GATE')
+    html = _email_shell('Your FAATN-GATE account is ready',
+                        f'<p>Hello {html_escape(user.full_name)},</p>'
+                        f'<p>A FAATN administrator created a {html_escape(ROLES.get(user.role, user.role))} account for you ({html_escape(user.email)}).</p>'
+                        f'<p>Use the button below to choose your own password (valid {hours} hours).</p>',
+                        'Set my password', link) + f'<p style="font-size:12px;color:#6b7280;">Or copy this link: {html_escape(link)}</p>'
+    return send_email(user.email, 'Your FAATN-GATE account', text, html)
+
+
+def email_notify_admin(subject, lines):
+    if not ADMIN_NOTIFY_EMAIL:
+        return False
+    link = external_url('admin_dashboard')
+    text = '\n'.join(lines) + f'\n\n{link}'
+    html = _email_shell(subject, ''.join(f'<p>{html_escape(x)}</p>' for x in lines), 'Open admin dashboard', link)
+    return send_email(ADMIN_NOTIFY_EMAIL, f'[FAATN-GATE] {subject}', text, html)
+
+
+def broadcast_event_email(event):
+    """Email a newly published Events / News item to every member who has not opted out."""
+    link = external_url('events_news_detail', event_id=event.id)
+    snippet = (event.description or '')[:400] + ('...' if len(event.description or '') > 400 else '')
+    jobs = []
+    for u in User.query.filter(User.email.isnot(None)).all():
+        if u.email_notifications is False or not is_valid_email(u.email):
+            continue
+        unsub = unsubscribe_link(u.id)
+        text = f'Hello {u.full_name},\n\n{event.title}\n\n{snippet}\n\nRead more: {link}\n\nUnsubscribe: {unsub}\n\n- FAATN-GATE'
+        html = _email_shell(event.title, f'<p>Hello {html_escape(u.full_name or "")},</p><p style="white-space:pre-line;">{html_escape(snippet)}</p>',
+                            'Read more', link, unsubscribe_url=unsub)
+        jobs.append({'to_addr': u.email, 'subject': f'FAATN-GATE: {event.title}', 'text_body': text,
+                     'html_body': html, 'unsubscribe_url': unsub})
+    return send_many(jobs)
 
 
 # ==================== MODELS ====================
@@ -301,6 +632,8 @@ class User(UserMixin, db.Model):
     institution_type = db.Column(db.String(80))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
+    # False = member opted out of update emails (password / security emails are always sent)
+    email_notifications = db.Column(db.Boolean, default=True)
 
     def avatar_url(self):
         if self.profile_pic:
@@ -549,6 +882,20 @@ class Notification(db.Model):
     user = db.relationship('User', backref='notifications')
 
 
+class TrashedUser(db.Model):
+    """A deleted member kept in Trash (full copy of their data) until an admin
+    permanently deletes it or restores it."""
+    id = db.Column(db.Integer, primary_key=True)
+    original_user_id = db.Column(db.Integer)
+    email = db.Column(db.String(120))
+    full_name = db.Column(db.String(150))
+    role = db.Column(db.String(50))
+    summary = db.Column(db.Text)            # human readable, e.g. "3 messages, 2 products"
+    snapshot = db.Column(db.Text, nullable=False)  # JSON copy of the user and related rows
+    deleted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    deleted_by_name = db.Column(db.String(150))
+
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -594,6 +941,21 @@ def deliver_to_inbox(recipient_id, body, subject=None, sender_id=None, sender_na
     if commit:
         db.session.commit()
     return msg
+
+
+@app.route('/email/unsubscribe/<token>')
+def email_unsubscribe(token):
+    try:
+        uid = _unsub_serializer().loads(token)
+    except BadSignature:
+        flash('That unsubscribe link is not valid.', 'danger')
+        return redirect(url_for('index'))
+    user = User.query.get(uid)
+    if user:
+        user.email_notifications = False
+        db.session.commit()
+    flash('You will no longer get update emails. Password and security emails are still sent.', 'info')
+    return redirect(url_for('index'))
 
 
 # ==================== ROUTES ====================
@@ -937,9 +1299,15 @@ def register():
         db.session.add(notif)
         db.session.commit()
 
-        # In production: send email with link. For demo we show the link.
-        verify_url = url_for('verify_email', token=token, _external=True)
-        flash(f'Registration successful! Please verify your email. (Demo link: {verify_url})', 'success')
+        email_notify_admin('New registration', [f'{user.full_name} ({user.email}) registered as {user.role}.'])
+
+        # Send the verification link by email
+        if send_verification_email(user, token):
+            flash(f'Registration successful! We sent a verification link to {email}. '
+                  'Please check your inbox (and spam folder).', 'success')
+        else:
+            flash('Registration successful! We could not send the verification email right now. '
+                  'Log in and use "Resend verification" on your profile page.', 'warning')
         return redirect(url_for('login'))
 
     return render_template(
@@ -999,6 +1367,31 @@ def verify_email(token):
     return redirect(url_for('login'))
 
 
+@app.route('/dashboard/profile/password', methods=['POST'])
+@login_required
+def change_password():
+    """Any signed-in member (including the admin) changes their own password."""
+    current = request.form.get('current_password', '')
+    new = request.form.get('new_password', '')
+    confirm = request.form.get('confirm_password', '')
+    if not current_user.check_password(current):
+        flash('Your current password is not correct. Password not changed.', 'danger')
+    elif len(new) < 8:
+        flash('The new password must be at least 8 characters.', 'danger')
+    elif new in KNOWN_PUBLIC_PASSWORDS:
+        flash('That password is publicly known. Choose a different one.', 'danger')
+    elif new != confirm:
+        flash('The new passwords do not match.', 'danger')
+    else:
+        current_user.set_password(new)
+        current_user.reset_token = None
+        current_user.reset_token_expires = None
+        db.session.commit()
+        send_password_changed_email(current_user)
+        flash('Your password was changed.', 'success')
+    return redirect(url_for('profile') + '#password')
+
+
 @app.route('/dashboard/resend-verification', methods=['POST'])
 @login_required
 def resend_verification():
@@ -1008,8 +1401,10 @@ def resend_verification():
     token = secrets.token_urlsafe(32)
     current_user.verification_token = token
     db.session.commit()
-    verify_url = url_for('verify_email', token=token, _external=True)
-    flash(f'Verification link (demo): {verify_url}', 'success')
+    if send_verification_email(current_user, token):
+        flash(f'Verification email sent to {current_user.email}. Please check your inbox (and spam folder).', 'success')
+    else:
+        flash('Email service is not available right now. Please try again later or contact FAATN support.', 'warning')
     return redirect(url_for('profile'))
 
 
@@ -1020,17 +1415,18 @@ def forgot_password():
     if request.method == 'POST':
         email = request.form.get('email', '').strip().lower()
         user = User.query.filter_by(email=email).first()
-        if user:
+        # Throttle: at most one reset email per account every 5 minutes (stops inbox-flooding someone else)
+        recently_sent = bool(user and user.reset_token_expires and
+                             user.reset_token_expires > datetime.utcnow() + timedelta(hours=2) - timedelta(minutes=5))
+        if user and not recently_sent:
             token = secrets.token_urlsafe(32)
             user.reset_token = token
             user.reset_token_expires = datetime.utcnow() + timedelta(hours=2)
             db.session.commit()
-            reset_url = url_for('reset_password', token=token, _external=True)
-            # Demo: show link (production would email it)
-            flash(f'Password reset link (demo): {reset_url}', 'success')
-        else:
-            # Don't reveal whether email exists
-            flash('If that email is registered, a reset link has been generated.', 'info')
+            send_reset_email(user, token)
+        # Same message whether or not the email exists (don't reveal who is registered)
+        flash('If that email is registered, a password reset link has been sent. '
+              'Please check your inbox (and spam folder).', 'info')
         return redirect(url_for('forgot_password'))
     return render_template('forgot_password.html')
 
@@ -1052,7 +1448,9 @@ def reset_password(token):
             user.set_password(password)
             user.reset_token = None
             user.reset_token_expires = None
+            user.email_verified = True  # they just proved they own this inbox
             db.session.commit()
+            send_password_changed_email(user)
             flash('Password updated. You can log in now.', 'success')
             return redirect(url_for('login'))
     return render_template('reset_password.html', token=token)
@@ -1116,6 +1514,7 @@ def profile():
         current_user.experience_years = int(request.form.get('experience_years') or 0)
         current_user.portfolio = request.form.get('portfolio', current_user.portfolio)
         current_user.needs = request.form.get('needs', current_user.needs)
+        current_user.email_notifications = bool(request.form.get('email_notifications'))
 
         # Profile picture upload
         file = request.files.get('profile_pic')
@@ -1263,7 +1662,10 @@ def events_news_public():
         )
         db.session.add(event)
         db.session.commit()
-        flash('Events / News published successfully.', 'success')
+        if request.form.get('notify_members'):
+            flash(f'Events / News published. Emailing {broadcast_event_email(event)} member(s).', 'success')
+        else:
+            flash('Events / News published successfully.', 'success')
         return redirect(url_for('events_news_public'))
 
     items = Event.query.filter_by(is_active=True).order_by(Event.created_at.desc()).all()
@@ -1376,7 +1778,10 @@ def events():
         )
         db.session.add(event)
         db.session.commit()
-        flash('Events / News item published.', 'success')
+        if request.form.get('notify_members'):
+            flash(f'Events / News item published. Emailing {broadcast_event_email(event)} member(s).', 'success')
+        else:
+            flash('Events / News item published.', 'success')
         return redirect(url_for('events'))
 
     all_events = Event.query.filter_by(is_active=True).order_by(
@@ -1543,6 +1948,20 @@ def need_help():
         )
         db.session.add(hr)
         db.session.commit()
+        visitor = (hr.requester_email or '').strip().lower()
+        if is_valid_email(visitor):
+            recent = HelpRequest.query.filter(db.func.lower(HelpRequest.requester_email) == visitor,
+                                              HelpRequest.created_at >= datetime.utcnow() - timedelta(hours=1)).count()
+            if recent <= 3:  # stops the form being used to spam someone else's inbox
+                body = (f'Hello {hr.requester_name or "there"},\n\nThank you for contacting FAATN-GATE. Your request was received and '
+                        f'FAATN will route it to suitable registered technicians.\n\nSummary: {(hr.description or "")[:200]}\n\n'
+                        '(You received this one-time message because this address was entered on the FAATN-GATE "I Need Help" form.)')
+                html = _email_shell('We received your request',
+                                    f'<p>Hello {html_escape(hr.requester_name or "there")},</p>'
+                                    '<p>Thank you for contacting FAATN-GATE. Your request was received and FAATN will route it to suitable registered technicians.</p>'
+                                    f'<p><em>{html_escape((hr.description or "")[:200])}</em></p>')
+                send_email(visitor, 'FAATN-GATE: we received your request', body, html)
+        email_notify_admin('New help request', [f'{hr.requester_name or "Someone"} ({hr.requester_phone or "no phone"}) in {hr.location_state or "?"}: {(hr.description or "")[:200]}'])
         flash('Your request has been submitted. FAATN will route it to suitable registered technicians.', 'success')
         return redirect(url_for('need_help'))
 
@@ -1919,6 +2338,86 @@ def institutions():
     )
 
 
+
+BOT_UA_MARKERS = (
+    'bot', 'crawl', 'spider', 'slurp', 'bingpreview', 'facebookexternalhit', 'whatsapp',
+    'telegram', 'preview', 'headless', 'python-requests', 'curl/', 'wget', 'monitor', 'uptime',
+)
+VISIT_COOLDOWN = timedelta(hours=1)
+
+
+def notify_profile_visit(member):
+    """Tell a member (in-app + email) that someone opened their public profile.
+
+    Skips the owner viewing their own page, non-GET requests and obvious crawlers /
+    link-preview bots. One alert per visitor per profile per hour; at most one email per hour.
+    """
+    try:
+        if request.method != 'GET':
+            return
+        ua = (request.headers.get('User-Agent') or '').lower()
+        if not ua or any(m in ua for m in BOT_UA_MARKERS):
+            return
+        if current_user.is_authenticated and current_user.id == member.id:
+            return
+
+        now = datetime.utcnow()
+        seen = session.get('profile_visits', {})
+        last = seen.get(str(member.id))
+        if last:
+            try:
+                if now - datetime.fromisoformat(last) < VISIT_COOLDOWN:
+                    return
+            except ValueError:
+                pass
+
+        if current_user.is_authenticated:
+            visitor = current_user.full_name or 'A FAATN member'
+            role_label = ROLES.get(current_user.role, '')
+            who = f'{visitor} ({role_label})' if role_label else visitor
+            message = f'{who} viewed your profile.'
+        else:
+            who = 'A visitor'
+            message = 'A visitor viewed your public profile.'
+
+        # Was there already a visit alert recently? (used to avoid flooding the inbox/email)
+        recent = Notification.query.filter(
+            Notification.user_id == member.id,
+            Notification.type == 'visit',
+            Notification.created_at > now - VISIT_COOLDOWN,
+        ).first()
+
+        db.session.add(Notification(
+            user_id=member.id, title='Someone visited your profile',
+            message=message, type='visit',
+        ))
+        db.session.commit()
+
+        seen[str(member.id)] = now.isoformat()
+        # keep the cookie small
+        if len(seen) > 30:
+            for k in sorted(seen, key=seen.get)[:len(seen) - 30]:
+                seen.pop(k, None)
+        session['profile_visits'] = seen
+
+        if VISIT_EMAIL and not recent and member.email and member.email_notifications is not False:
+            link = external_url('notifications')
+            unsub_visit = unsubscribe_link(member.id)
+            text = (
+                f'Hello {member.full_name},\n\n{message}\n\n'
+                f'See your notifications: {link}\n\nUnsubscribe from update emails: {unsub_visit}\n\n— FAATN-GATE'
+            )
+            html = _email_shell(
+                'Someone visited your profile',
+                f'<p>Hello {html_escape(member.full_name or "")},</p><p>{html_escape(message)}</p>',
+                'View notifications', link, unsubscribe_url=unsub_visit,
+            )
+            send_email(member.email, 'Someone visited your FAATN-GATE profile', text, html, unsubscribe_url=unsub_visit)
+    except Exception as exc:  # never break the public page because of a notification
+        db.session.rollback()
+        print(f'[visit] notification failed: {exc}', flush=True)
+
+
 @app.route('/member/<int:user_id>')
 def public_profile(user_id):
     """Public SEO profile — FAATN is master DB; Maps is integration only."""
@@ -1926,6 +2425,7 @@ def public_profile(user_id):
     if user.role == 'admin':
         flash('Profile not available.', 'info')
         return redirect(url_for('gate'))
+    notify_profile_visit(user)
     # Prefer listed members for public discovery
     return render_template('public_profile.html', member=user)
 
@@ -2196,7 +2696,13 @@ def get_connection_metrics():
 @app.route('/dashboard/admin')
 @admin_required
 def admin_dashboard():
-    users = User.query.order_by(User.created_at.desc()).limit(30).all()
+    search = (request.args.get('q') or '').strip()
+    uq = User.query.order_by(User.created_at.desc())
+    if search:
+        like = f'%{search}%'
+        uq = uq.filter(db.or_(User.full_name.ilike(like), User.email.ilike(like),
+                              User.phone.ilike(like), User.role.ilike(like)))
+    users = uq.limit(100 if search else 30).all()
     total_users = User.query.count()
     total_opps = Opportunity.query.count()
     total_innov = Innovation.query.count()
@@ -2216,15 +2722,26 @@ def admin_dashboard():
     except Exception:
         stats['help_open'] = 0
     db_metrics = get_connection_metrics()
+    n_admins = admin_count()
     return render_template(
         'dashboard_admin.html',
         users=users,
+        search=search,
+        trash_count=TrashedUser.query.count(),
         total_users=total_users,
         total_opps=total_opps,
         total_innov=total_innov,
         db_metrics=db_metrics,
         listing_categories=LISTING_CATEGORIES,
         stats=stats,
+        roles=ROLES,
+        stakeholder_roles=STAKEHOLDER_ROLES,
+        occupations=OCCUPATIONS,
+        admin_count=n_admins,
+        max_admins=MAX_ADMINS,
+        can_create_admin=n_admins < MAX_ADMINS,
+        mail_transport=mail_transport(),
+        weak_password=any(current_user.check_password(p) for p in KNOWN_PUBLIC_PASSWORDS),
     )
 
 
@@ -2248,10 +2765,13 @@ def set_listing_category(user_id):
 @app.route('/dashboard/admin/send-notification', methods=['GET', 'POST'])
 @admin_required
 def admin_send_notification():
-    """Admin broadcasts a notification to artisans / technicians.
-    Optional keyword filters by occupation, specialty or skills
-    (e.g. keyword='massage' reaches Massage Therapist and anyone
-    who listed massage interest).
+    """Admin sends a notification (in-app inbox + notification bell, optionally email)
+    to registered users.
+
+    Audience options:
+      * one specific registered user (``user_id``), or
+      * a group: all registered users, or one role, optionally narrowed by a keyword
+        matching occupation / specialty / skills / needs (e.g. 'massage').
     """
     if request.method == 'POST':
         title = (request.form.get('title') or '').strip()
@@ -2259,32 +2779,47 @@ def admin_send_notification():
         notif_type = (request.form.get('type') or 'info').strip()
         keyword = (request.form.get('keyword') or '').strip().lower()
         target_role = (request.form.get('target_role') or 'all').strip().lower()
+        target_user_id = (request.form.get('user_id') or '').strip()
+        also_email = request.form.get('send_email') == '1'
 
         if not title or not message:
             flash('Title and message are required.', 'danger')
-            return redirect(url_for('admin_send_notification'))
+            return redirect(url_for('admin_send_notification', user_id=target_user_id or None))
 
         allowed_types = {'info', 'success', 'warning', 'opportunity', 'training'}
         if notif_type not in allowed_types:
             notif_type = 'info'
 
-        q = User.query.filter(User.role.in_(['artisan', 'technician', 'engineer']))
-        if target_role in ('artisan', 'technician', 'engineer'):
-            q = q.filter(User.role == target_role)
-
-        if keyword:
-            like = f'%{keyword}%'
-            q = q.filter(
-                db.or_(
-                    User.occupation.ilike(like),
-                    User.specialty.ilike(like),
-                    User.skills.ilike(like),
-                    User.needs.ilike(like),
+        if target_user_id:
+            # One specific registered user
+            single = User.query.get(int(target_user_id)) if target_user_id.isdigit() else None
+            if not single:
+                flash('That user no longer exists.', 'danger')
+                return redirect(url_for('admin_send_notification'))
+            recipients = [single]
+        else:
+            # Every registered user except admins; optionally one role
+            q = User.query.filter(User.role != 'admin')
+            if target_role in STAKEHOLDER_ROLES:
+                q = q.filter(User.role == target_role)
+            if keyword:
+                like = f'%{keyword}%'
+                q = q.filter(
+                    db.or_(
+                        User.occupation.ilike(like),
+                        User.specialty.ilike(like),
+                        User.skills.ilike(like),
+                        User.needs.ilike(like),
+                    )
                 )
-            )
+            recipients = q.all()
 
-        recipients = q.all()
-        count = 0
+        if not recipients:
+            flash('No registered users match that selection.', 'warning')
+            return redirect(url_for('admin_send_notification'))
+
+        emailed = 0
+        link = external_url('notifications')
         for u in recipients:
             # Goes to Messages inbox AND Notifications
             deliver_to_inbox(
@@ -2297,20 +2832,234 @@ def admin_send_notification():
                 notif_type=notif_type,
                 commit=False,
             )
-            count += 1
         db.session.commit()
 
-        flash(
-            f'Message delivered to {count} inbox(es)'
-            + (f' matching “{keyword}”' if keyword else '') + '.',
-            'success',
-        )
+        if also_email:
+            for u in recipients:
+                if not u.email or u.email_notifications is False:
+                    continue
+                unsub = unsubscribe_link(u.id)
+                text = f'Hello {u.full_name},\n\n{message}\n\nOpen your notifications: {link}\n\nUnsubscribe from update emails: {unsub}\n\n- FAATN-GATE'
+                html = _email_shell(
+                    title,
+                    f'<p>Hello {html_escape(u.full_name or "")},</p>'
+                    f'<p style="white-space:pre-line;">{html_escape(message)}</p>',
+                    'View notifications', link, unsubscribe_url=unsub,
+                )
+                if send_email(u.email, title, text, html, unsubscribe_url=unsub):
+                    emailed += 1
+
+        if len(recipients) == 1:
+            result = f'Notification sent to {recipients[0].full_name}.'
+        else:
+            result = (f'Notification delivered to {len(recipients)} registered user(s)'
+                      + (f' matching "{keyword}"' if keyword else '') + '.')
+        if also_email:
+            result += (f' Email queued for {emailed}.' if mail_configured()
+                       else ' Email is not configured on the server, so only in-app delivery was made.')
+        flash(result, 'success')
         return redirect(url_for('admin_dashboard'))
 
+    selected_user = None
+    uid = request.args.get('user_id', '')
+    if uid.isdigit():
+        selected_user = User.query.get(int(uid))
     return render_template(
         'admin_send_notification.html',
         occupations=OCCUPATIONS,
+        roles=ROLES,
+        stakeholder_roles=STAKEHOLDER_ROLES,
+        selected_user=selected_user,
     )
+
+
+@app.route('/dashboard/admin/create-user', methods=['POST'])
+@admin_required
+def admin_create_user():
+    """Admin creates an account (member, or a 2nd admin: max MAX_ADMINS).
+
+    The new user is emailed a one-time link to choose their OWN password; the password itself is
+    never put in an email. Leave the password blank to have a strong one generated."""
+    email = (request.form.get('email') or '').strip().lower()
+    full_name = (request.form.get('full_name') or '').strip()
+    typed = request.form.get('password') or ''
+    role = (request.form.get('role') or 'artisan').strip().lower()
+    phone = (request.form.get('phone') or '').strip()
+    location_state = (request.form.get('location_state') or '').strip()
+    occupation = (request.form.get('occupation') or '').strip()
+    send_welcome = request.form.get('send_welcome') == '1'
+
+    if not full_name:
+        flash('Full name is required.', 'danger')
+        return redirect(url_for('admin_dashboard'))
+    if not is_valid_email(email):
+        flash('Enter a valid email address.', 'danger')
+        return redirect(url_for('admin_dashboard'))
+    if typed and len(typed) < 6:
+        flash('Password must be at least 6 characters (or leave it blank to generate one).', 'danger')
+        return redirect(url_for('admin_dashboard'))
+    if role not in list(STAKEHOLDER_ROLES) + ['admin']:
+        flash('Invalid role.', 'danger')
+        return redirect(url_for('admin_dashboard'))
+    if User.query.filter(db.func.lower(User.email) == email).first():
+        flash(f'Email {email} is already registered.', 'warning')
+        return redirect(url_for('admin_dashboard'))
+    if role == 'admin' and not can_create_admin():
+        flash(f'Maximum of {MAX_ADMINS} administrator accounts allowed. Cannot create another admin.', 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    password = typed or secrets.token_urlsafe(9)
+    user = User(
+        email=email,
+        full_name=full_name,
+        phone=phone or None,
+        role=role,
+        location_state=location_state or None,
+        occupation=occupation or None,
+        verified=(role == 'admin'),
+        email_verified=True,  # an administrator vouches for this address
+        listing_category='verified' if role == 'admin' else (
+            'registered' if role in MEMBER_ROLES else 'public'
+        ),
+    )
+    user.set_password(password)
+    db.session.add(user)
+    db.session.commit()
+
+    msg = f'User {full_name} ({email}) created as {ROLES.get(role, role)}.'
+    link = None
+    if send_welcome:
+        token = secrets.token_urlsafe(32)
+        user.reset_token = token
+        user.reset_token_expires = datetime.utcnow() + timedelta(hours=48)
+        db.session.commit()
+        if send_welcome_email(user, token, 48):
+            msg += ' A welcome email with a set-your-password link was sent to their inbox.'
+        elif mail_configured():
+            msg += ' The welcome email could not be queued.'
+        else:
+            link = external_url('reset_password', token=token)
+            msg += f' Email is not configured, so share this set-password link yourself (valid 48 hours): {link}'
+    if not typed:
+        msg += f' Temporary password (shown once): {password}'
+    flash(msg, 'success')
+    return redirect(url_for('admin_dashboard'))
+
+
+@app.route('/dashboard/admin/user/<int:user_id>/reset-password', methods=['POST'])
+@admin_required
+def admin_reset_password(user_id):
+    """Admin resets a user's password: email them a reset link, or set a new one.
+
+    The user is always told (by email) that the password changed, but the email never contains it."""
+    user = User.query.get_or_404(user_id)
+    if user.id == current_user.id:
+        flash('To change your own password use the "Change password" card on your Profile page.', 'warning')
+        return redirect(url_for('admin_dashboard'))
+
+    mode = (request.form.get('mode') or 'link').strip().lower()  # link | set
+    new_password = (request.form.get('new_password') or '').strip()
+
+    if mode == 'set':
+        if user.role == 'admin':
+            flash("For safety you cannot set another administrator's password. Send them a reset link instead.", 'danger')
+            return redirect(url_for('admin_dashboard'))
+        if new_password and len(new_password) < 6:
+            flash('New password must be at least 6 characters (or leave it blank to generate one).', 'danger')
+            return redirect(url_for('admin_dashboard'))
+        password = new_password or secrets.token_urlsafe(9)
+        user.set_password(password)
+        user.reset_token = None
+        user.reset_token_expires = None
+        db.session.commit()
+        send_password_changed_email(user, by_admin=True)
+        flash(f'New password for {user.full_name} (shown once, share it privately): {password}', 'warning')
+        return redirect(url_for('admin_dashboard'))
+
+    token = secrets.token_urlsafe(32)
+    user.reset_token = token
+    user.reset_token_expires = datetime.utcnow() + timedelta(hours=2)
+    db.session.commit()
+    if send_reset_email(user, token):
+        flash(f'Password reset link emailed to {user.email} (valid 2 hours).', 'success')
+    elif mail_configured():
+        flash(f'Reset link generated but email failed for {user.email}. Check mail logs.', 'warning')
+    else:
+        flash(f'Email not configured. Share this reset link securely (valid 2 hours): {external_url("reset_password", token=token)}', 'info')
+    return redirect(url_for('admin_dashboard'))
+
+
+@app.route('/dashboard/admin/test-email', methods=['POST'])
+@admin_required
+def admin_test_email():
+    html = _email_shell('Test email', '<p>If you can read this, FAATN-GATE email delivery works.</p>')
+    ok, err = send_email_now(current_user.email, 'FAATN-GATE test email',
+                             'If you can read this, FAATN-GATE email delivery works.', html)
+    flash(f'Test email sent to {current_user.email}. Check the inbox (and spam).' if ok else f'Test email FAILED: {err}',
+          'success' if ok else 'danger')
+    return redirect(url_for('admin_dashboard'))
+
+
+@app.route('/dashboard/admin/user/<int:user_id>/delete', methods=['POST'])
+@admin_required
+def admin_delete_user(user_id):
+    """Admin removes a registered user. A full copy is kept in Trash until an admin
+    permanently deletes it (or restores it)."""
+    user = User.query.get_or_404(user_id)
+    if user.id == current_user.id:
+        flash('You cannot delete your own account.', 'danger')
+        return redirect(url_for('admin_dashboard'))
+    if user.role == 'admin':
+        flash('Admin accounts cannot be deleted from here.', 'danger')
+        return redirect(url_for('admin_dashboard'))
+
+    name, email = user.full_name, user.email
+    try:
+        trash_user(user, current_user)
+    except Exception as exc:
+        db.session.rollback()
+        print(f'[admin] move user {user_id} to trash failed: {exc}', flush=True)
+        flash('Could not delete that user. Nothing was changed.', 'danger')
+        return redirect(url_for('admin_dashboard'))
+    flash(f'{name} ({email}) was removed and a copy was kept in Trash. '
+          'Open Trash to restore or permanently delete.', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+
+@app.route('/dashboard/admin/trash')
+@admin_required
+def admin_trash():
+    items = TrashedUser.query.order_by(TrashedUser.deleted_at.desc()).all()
+    return render_template('admin_trash.html', items=items)
+
+
+@app.route('/dashboard/admin/trash/<int:trash_id>/restore', methods=['POST'])
+@admin_required
+def admin_trash_restore(trash_id):
+    item = TrashedUser.query.get_or_404(trash_id)
+    name = item.full_name
+    try:
+        ok, msg = restore_user(item)
+    except Exception as exc:
+        db.session.rollback()
+        print(f'[admin] restore trash {trash_id} failed: {exc}', flush=True)
+        ok, msg = False, 'Restore failed. Nothing was changed.'
+    flash(msg if not ok else f'{name} was restored with their data.', 'success' if ok else 'danger')
+    return redirect(url_for('admin_trash'))
+
+
+@app.route('/dashboard/admin/trash/<int:trash_id>/delete', methods=['POST'])
+@admin_required
+def admin_trash_delete(trash_id):
+    """Final approval: permanently erase the Trash copy (database record + files)."""
+    item = TrashedUser.query.get_or_404(trash_id)
+    name, email = item.full_name, item.email
+    tid = item.id
+    db.session.delete(item)
+    db.session.commit()
+    shutil.rmtree(os.path.join(app.config['TRASH_FOLDER'], str(tid)), ignore_errors=True)
+    flash(f'{name} ({email}) was permanently deleted. This cannot be undone.', 'success')
+    return redirect(url_for('admin_trash'))
 
 
 @app.route('/dashboard/admin/db-metrics')
@@ -2324,93 +3073,34 @@ def admin_db_metrics():
 
 # ==================== SEED DATA ====================
 
-def seed_data():
-    if User.query.filter_by(email='admin@faatn.ng').first():
-        return
+DEFAULT_ADMIN_EMAIL = 'admin@faatn.ng'   # the old default admin (public password) - see retire_default_admin()
+KNOWN_PUBLIC_PASSWORDS = ('change-me-on-first-login', 'Admin@FAATN2026')
 
-    # Admin — password from env so it is never published on the website or in docs
-    admin_password = os.environ.get('ADMIN_PASSWORD', 'change-me-on-first-login')
+
+def create_admin_account(email, full_name, password):
+    """Create an administrator. Returns (user, error). Enforces MAX_ADMINS."""
+    email = (email or '').strip().lower()
+    if not is_valid_email(email):
+        return None, 'Enter a valid email address.'
+    if len(password or '') < 8:
+        return None, 'Admin password must be at least 8 characters.'
+    if not can_create_admin():
+        return None, f'The maximum of {MAX_ADMINS} administrators is already in use.'
+    if User.query.filter(db.func.lower(User.email) == email).first():
+        return None, 'That email is already registered.'
     admin = User(
-        email=os.environ.get('ADMIN_EMAIL', 'admin@faatn.ng'),
-        full_name='FAATN Administrator',
-        role='admin',
-        location_state='FCT',
-        occupation='System Admin',
-        verified=True,
-        email_verified=True,
+        email=email, full_name=(full_name or 'FAATN Administrator').strip(), role='admin',
+        location_state='FCT', occupation='System Admin', verified=True, email_verified=True,
         listing_category='verified',
     )
-    admin.set_password(admin_password)
+    admin.set_password(password)
     db.session.add(admin)
-
-    # Demo Artisan
-    artisan = User(
-        email='artisan@demo.ng',
-        full_name='Chinedu Okoro',
-        phone='+234 803 123 4567',
-        role='artisan',
-        location_state='Anambra',
-        location_lga='Awka South',
-        location_community='Amawbia',
-        occupation='Carpentry',
-        specialty='Furniture Making & Woodwork',
-        skills='Carpentry, Joinery, Finishing, Design, Measurement',
-        experience_years=8,
-        portfolio='Built over 200 custom furniture pieces. Specialist in modern Nigerian-style living room sets.',
-        needs='Advanced CNC training, Market access for export quality products',
-        verified=True,
-        email_verified=True,
-        listing_category='verified',
-    )
-    artisan.set_password('Artisan@123')
-    db.session.add(artisan)
-
-    # Demo Technician
-    tech = User(
-        email='tech@demo.ng',
-        full_name='Amina Yusuf',
-        phone='+234 802 987 6543',
-        role='technician',
-        location_state='Kano',
-        location_lga='Nassarawa',
-        location_community='Bompai',
-        occupation='Electrical Technician',
-        specialty='Solar Installation & Maintenance',
-        skills='Solar PV, Inverters, Wiring, Troubleshooting, Battery Systems',
-        experience_years=5,
-        portfolio='Installed 45+ residential solar systems across Kano.',
-        needs='Certification in advanced hybrid systems',
-        verified=True,
-        email_verified=True,
-        listing_category='verified',
-    )
-    tech.set_password('Tech@123')
-    db.session.add(tech)
-
-    # Demo Engineer / Technical Professional
-    engineer = User(
-        email='engineer@demo.ng',
-        full_name='Engr. Tunde Adebayo',
-        phone='+234 805 111 2233',
-        role='engineer',
-        location_state='Lagos',
-        location_lga='Ikeja',
-        location_community='Alausa',
-        occupation='Mechanical Engineer',
-        specialty='Industrial Equipment & Fabrication Support',
-        skills='CAD, Fabrication Design, Quality Control, Technical Mentoring, NSE Standards',
-        experience_years=12,
-        portfolio='Supports artisans with design drawings, load calculations and workshop process improvement across SW Nigeria.',
-        needs='Link with skilled welders and CNC operators for pilot projects',
-        verified=True,
-        email_verified=True,
-        listing_category='verified',
-    )
-    engineer.set_password('Engineer@123')
-    db.session.add(engineer)
-
     db.session.commit()
+    return admin, None
 
+
+def _seed_sample_content(admin):
+    """Sample trainings / opportunities / event (NOT accounts), created only with the very first admin."""
     # Trainings
     trainings = [
         Training(title='Advanced Woodworking & CNC Operation', provider='FAATN Skills Hub - Anambra', description='Master modern CNC machines and precision woodworking techniques for high-value furniture production.', duration='6 weeks', skill_gap='CNC & Digital Fabrication', location='Awka, Anambra'),
@@ -2433,33 +3123,6 @@ def seed_data():
 
     db.session.commit()
 
-    # Sample system messages for artisan
-    msg1 = Message(recipient_id=artisan.id, sender_id=None, sender_name='FAATN Matching Engine', subject='New Opportunity Match', body='A furniture contract in Enugu matches your skills profile (95% match). Apply now from your Opportunities page.')
-    msg2 = Message(recipient_id=artisan.id, sender_id=None, sender_name='Training Coordinator', subject='CNC Training Starting Soon', body='The Advanced Woodworking & CNC course begins in two weeks. Confirm your attendance.')
-    db.session.add_all([msg1, msg2])
-
-    # Peer-to-peer sample chat: technician asks artisan for woodworking help
-    peer1 = Message(
-        recipient_id=artisan.id,
-        sender_id=tech.id,
-        sender_name=tech.full_name,
-        subject='Need woodworking advice',
-        body='Hello Chinedu, I am installing a solar system for a client who also needs custom mounting frames. Can you advise on durable local hardwood that works outdoors?'
-    )
-    peer2 = Message(
-        recipient_id=tech.id,
-        sender_id=artisan.id,
-        sender_name=artisan.full_name,
-        subject='Re: Need woodworking advice',
-        body='Hi Amina, yes — Iroko or Mahogany treated with weather-resistant varnish works well for outdoor frames. I can supply cut pieces if needed. Let’s discuss sizes.'
-    )
-    db.session.add_all([peer1, peer2])
-
-    n1 = Notification(user_id=artisan.id, title='Profile Verification Complete', message='Your artisan profile has been verified. You now have full access to matching and opportunities.', type='success')
-    n2 = Notification(user_id=artisan.id, title='New Grant Opportunity', message='Artisan Innovation Grant 2026 is now open. Submit your ideas via the Innovation module.', type='opportunity')
-    n3 = Notification(user_id=artisan.id, title='New message from Amina Yusuf', message='Hello Chinedu, I am installing a solar system for a client who also needs custom mounting frames…', type='info')
-    db.session.add_all([n1, n2, n3])
-
     # Sample FAATN event
     sample_event = Event(
         title='FAATN Skills & Innovation Fair 2026',
@@ -2476,11 +3139,353 @@ def seed_data():
     print('✅ Database seeded successfully!')
 
 
+def seed_data():
+    """No demo accounts and NO default password.
+
+    The first administrator comes from ADMIN_EMAIL + ADMIN_PASSWORD (or `flask create-admin`).
+    With ADMIN_EMAIL + ADMIN_PASSWORD set, a missing admin is also added later (max MAX_ADMINS)."""
+    email = os.environ.get('ADMIN_EMAIL', '').strip().lower()
+    password = os.environ.get('ADMIN_PASSWORD', '')
+    first_run = admin_count() == 0
+    if not password:
+        if first_run:
+            print('⚠️  No administrator exists. Set ADMIN_EMAIL and ADMIN_PASSWORD, or run: flask create-admin you@example.com', flush=True)
+        return
+    email = email or DEFAULT_ADMIN_EMAIL
+    if not first_run and User.query.filter(db.func.lower(User.email) == email).first():
+        return  # already created on an earlier start
+    admin, err = create_admin_account(email, os.environ.get('ADMIN_NAME', 'FAATN Administrator'), password)
+    if not admin:
+        print(f'⚠️  Administrator from environment not created: {err}', flush=True)
+        return
+    print(f'✅ Administrator {admin.email} created from environment.', flush=True)
+    if first_run:
+        _seed_sample_content(admin)
+
+
+@app.cli.command('create-admin')
+@click.argument('email')
+@click.option('--name', default='FAATN Administrator', show_default=True)
+@click.password_option()
+def create_admin_command(email, name, password):
+    """Create an administrator (max 2):  flask create-admin you@example.com"""
+    admin, err = create_admin_account(email, name, password)
+    print(f'Administrator {admin.email} created.' if admin else f'Not created: {err}')
+
+
+def retire_default_admin():
+    """Remove admin@faatn.ng, but ONLY if it still uses a publicly known password AND another
+    administrator exists. If you changed its password it is left alone."""
+    old = User.query.filter(db.func.lower(User.email) == DEFAULT_ADMIN_EMAIL, User.role == 'admin').first()
+    if not old or not any(old.check_password(p) for p in KNOWN_PUBLIC_PASSWORDS):
+        return
+    if User.query.filter(User.role == 'admin', User.id != old.id).count() == 0:
+        print('⚠️  SECURITY: admin@faatn.ng still uses a public default password. Set ADMIN_EMAIL and '
+              'ADMIN_PASSWORD (a different email) and restart: it will then be removed automatically.', flush=True)
+        return
+    purge_users([old.id])
+    print('🧹 Removed the default admin account (it used a public password).', flush=True)
+
+
+# Legacy demo accounts (removed safely on every app start)
+DEMO_EMAILS = (
+    'artisan@demo.ng',
+    'tech@demo.ng',
+    'engineer@demo.ng',
+    'demo@faatn.ng',
+    'demo@demo.ng',
+    'test@demo.ng',
+)
+
+
+def _safe_remove(folder, filename):
+    """Delete an uploaded file; ignore missing files and path tricks."""
+    if not filename:
+        return
+    try:
+        path = os.path.join(folder, os.path.basename(filename))
+        if os.path.isfile(path):
+            os.remove(path)
+    except OSError as exc:
+        print(f'[cleanup] could not remove {filename}: {exc}', flush=True)
+
+
+def purge_users(ids):
+    """Permanently delete users and everything tied to them (DB rows + uploaded files).
+
+    Used by the admin "Delete user" action and by remove_demo_data().
+    Raises on failure (caller should rollback).
+    """
+    ids = list(ids)
+    if not ids:
+        return
+
+    users = User.query.filter(User.id.in_(ids)).all()
+    emails = [u.email for u in users if u.email]
+
+    # Collect uploaded files first; remove them only after the DB commit succeeds
+    avatar_files = [u.profile_pic for u in users if u.profile_pic]
+    chat_files = [
+        m.image_filename for m in Message.query.filter(
+            db.or_(Message.recipient_id.in_(ids), Message.sender_id.in_(ids)),
+            Message.image_filename.isnot(None),
+        ).all()
+    ]
+    product_files = []
+
+    # Their marketplace listings (images and reviews of those products cascade)
+    for prod in Product.query.filter(Product.user_id.in_(ids)).all():
+        if prod.image_filename:
+            product_files.append(prod.image_filename)
+        product_files.extend(img.filename for img in prod.images)
+        db.session.delete(prod)
+    db.session.flush()
+
+    TrainingEnrollment.query.filter(TrainingEnrollment.user_id.in_(ids)).delete(synchronize_session=False)
+    Innovation.query.filter(Innovation.user_id.in_(ids)).delete(synchronize_session=False)
+    OpportunityApplication.query.filter(OpportunityApplication.user_id.in_(ids)).delete(synchronize_session=False)
+    Notification.query.filter(Notification.user_id.in_(ids)).delete(synchronize_session=False)
+    Message.query.filter(
+        db.or_(Message.recipient_id.in_(ids), Message.sender_id.in_(ids))
+    ).delete(synchronize_session=False)
+    Review.query.filter(
+        db.or_(Review.reviewer_id.in_(ids), Review.target_user_id.in_(ids))
+    ).delete(synchronize_session=False)
+
+    # Help requests the user submitted (linked by account or by their email address)
+    help_filter = HelpRequest.user_id.in_(ids)
+    if emails:
+        help_filter = db.or_(help_filter, db.func.lower(HelpRequest.requester_email).in_([e.lower() for e in emails]))
+    HelpRequest.query.filter(help_filter).delete(synchronize_session=False)
+
+    # Public content keeps existing, just no longer points at a deleted user
+    Event.query.filter(Event.created_by_id.in_(ids)).update({'created_by_id': None}, synchronize_session=False)
+    GalleryItem.query.filter(GalleryItem.created_by_id.in_(ids)).update({'created_by_id': None}, synchronize_session=False)
+
+    for u in users:
+        db.session.delete(u)
+    db.session.commit()
+
+    for fn in avatar_files:
+        _safe_remove(app.config['UPLOAD_FOLDER'], fn)
+    for fn in chat_files:
+        _safe_remove(app.config['CHAT_UPLOAD_FOLDER'], fn)
+    for fn in product_files:
+        _safe_remove(app.config['PRODUCT_UPLOAD_FOLDER'], fn)
+
+
+def _row_to_json(obj):
+    out = {}
+    for col in obj.__table__.columns:
+        v = getattr(obj, col.name)
+        if isinstance(v, (datetime, date)):
+            v = v.isoformat()
+        out[col.name] = v
+    return out
+
+
+def _row_from_json(model, row, **overrides):
+    """Build a model instance from a snapshot row (id dropped so a fresh one is assigned)."""
+    kwargs = {}
+    for col in model.__table__.columns:
+        if col.name == 'id' or col.name not in row:
+            continue
+        v = row[col.name]
+        if isinstance(v, str):
+            try:
+                pt = col.type.python_type
+                if pt is datetime:
+                    v = datetime.fromisoformat(v)
+                elif pt is date:
+                    v = date.fromisoformat(v)
+            except (NotImplementedError, ValueError):
+                pass
+        kwargs[col.name] = v
+    kwargs.update(overrides)
+    return model(**kwargs)
+
+
+_TRASH_FILE_FOLDERS = {
+    'avatars': 'UPLOAD_FOLDER',
+    'chat': 'CHAT_UPLOAD_FOLDER',
+    'products': 'PRODUCT_UPLOAD_FOLDER',
+}
+
+
+def trash_user(user, admin):
+    """Copy a user's data + files into Trash, then remove them from the live site."""
+    uid = user.id
+    emails = [user.email.lower()] if user.email else []
+
+    prods = Product.query.filter(Product.user_id == uid).all()
+    pids = [p.id for p in prods]
+    msgs = Message.query.filter(db.or_(Message.recipient_id == uid, Message.sender_id == uid)).all()
+    rev_filter = db.or_(Review.reviewer_id == uid, Review.target_user_id == uid)
+    if pids:
+        rev_filter = db.or_(rev_filter, Review.product_id.in_(pids))
+    reviews = Review.query.filter(rev_filter).all()
+    help_filter = HelpRequest.user_id == uid
+    if emails:
+        help_filter = db.or_(help_filter, db.func.lower(HelpRequest.requester_email).in_(emails))
+    helps = HelpRequest.query.filter(help_filter).all()
+
+    snap = {
+        'user': _row_to_json(user),
+        'enrollments': [_row_to_json(x) for x in TrainingEnrollment.query.filter_by(user_id=uid)],
+        'innovations': [_row_to_json(x) for x in Innovation.query.filter_by(user_id=uid)],
+        'applications': [_row_to_json(x) for x in OpportunityApplication.query.filter_by(user_id=uid)],
+        'notifications': [_row_to_json(x) for x in Notification.query.filter_by(user_id=uid)],
+        'messages': [_row_to_json(x) for x in msgs],
+        'products': [dict(_row_to_json(p), _images=[_row_to_json(i) for i in p.images]) for p in prods],
+        'reviews': [_row_to_json(x) for x in reviews],
+        'help_requests': [_row_to_json(x) for x in helps],
+        'event_ids': [e.id for e in Event.query.filter_by(created_by_id=uid)],
+        'gallery_ids': [g.id for g in GalleryItem.query.filter_by(created_by_id=uid)],
+    }
+    summary_bits = [
+        (len(msgs), 'message'), (len(prods), 'product'), (len(reviews), 'review'),
+        (len(snap['innovations']), 'innovation'), (len(snap['applications']), 'application'),
+        (len(snap['notifications']), 'notification'), (len(helps), 'help request'),
+    ]
+    summary = ', '.join(f'{n} {w}{"" if n == 1 else "s"}' for n, w in summary_bits if n) or 'profile only'
+
+    item = TrashedUser(
+        original_user_id=uid, email=user.email, full_name=user.full_name, role=user.role,
+        summary=summary, snapshot=json.dumps(snap), deleted_by_name=getattr(admin, 'full_name', None),
+    )
+    db.session.add(item)
+    db.session.flush()  # get item.id
+
+    # Copy uploaded files into the (non-public) trash folder
+    files = {'avatars': [user.profile_pic] if user.profile_pic else [],
+             'chat': [m.image_filename for m in msgs if m.image_filename],
+             'products': [p.image_filename for p in prods if p.image_filename]
+                         + [i.filename for p in prods for i in p.images]}
+    trash_dir = os.path.join(app.config['TRASH_FOLDER'], str(item.id))
+    try:
+        for kind, names in files.items():
+            for fn in names:
+                src = os.path.join(app.config[_TRASH_FILE_FOLDERS[kind]], os.path.basename(fn))
+                if os.path.isfile(src):
+                    os.makedirs(os.path.join(trash_dir, kind), exist_ok=True)
+                    shutil.copy2(src, os.path.join(trash_dir, kind, os.path.basename(fn)))
+        purge_users([uid])   # commits the TrashedUser row and the deletion together
+    except Exception:
+        db.session.rollback()
+        shutil.rmtree(trash_dir, ignore_errors=True)
+        raise
+
+
+def restore_user(item):
+    """Bring a trashed user back with their data. Returns (ok, message)."""
+    snap = json.loads(item.snapshot)
+    u = snap['user']
+    if User.query.filter(db.func.lower(User.email) == (u.get('email') or '').lower()).first():
+        return False, (f'Cannot restore: the email {u.get("email")} is now used by another account. '
+                       'Delete or change that account first.')
+
+    old_uid = u['id']
+    new_user = _row_from_json(User, u)
+    if not User.query.get(old_uid):
+        new_user.id = old_uid          # keep the original id when it is still free
+    db.session.add(new_user)
+    db.session.flush()
+    new_uid = new_user.id
+
+    def user_exists(i):
+        return i is None or i == old_uid or User.query.get(i) is not None
+
+    def map_user(i):
+        return new_uid if i == old_uid else i
+
+    for r in snap['enrollments']:
+        if Training.query.get(r['training_id']):
+            db.session.add(_row_from_json(TrainingEnrollment, r, user_id=new_uid))
+    for r in snap['innovations']:
+        db.session.add(_row_from_json(Innovation, r, user_id=new_uid))
+    for r in snap['applications']:
+        if Opportunity.query.get(r['opportunity_id']):
+            db.session.add(_row_from_json(OpportunityApplication, r, user_id=new_uid))
+    for r in snap['notifications']:
+        db.session.add(_row_from_json(Notification, r, user_id=new_uid))
+
+    prod_map = {}
+    for r in snap['products']:
+        p = _row_from_json(Product, r, user_id=new_uid)
+        db.session.add(p)
+        db.session.flush()
+        prod_map[r['id']] = p.id
+        for img in r.get('_images', []):
+            db.session.add(_row_from_json(ProductImage, img, product_id=p.id))
+
+    for r in snap['reviews']:
+        reviewer, target = map_user(r['reviewer_id']), map_user(r['target_user_id'])
+        if not (user_exists(reviewer) and user_exists(target)):
+            continue
+        pid = r['product_id']
+        if pid is not None:
+            pid = prod_map.get(pid, pid)
+            if not Product.query.get(pid):
+                continue
+        db.session.add(_row_from_json(Review, r, reviewer_id=reviewer, target_user_id=target, product_id=pid))
+
+    for r in snap['messages']:
+        rec, snd = map_user(r['recipient_id']), map_user(r['sender_id'])
+        if rec is None or not user_exists(rec) or not user_exists(snd):
+            continue
+        db.session.add(_row_from_json(Message, r, recipient_id=rec, sender_id=snd))
+
+    for r in snap['help_requests']:
+        db.session.add(_row_from_json(HelpRequest, r, user_id=new_uid if r.get('user_id') == old_uid else None))
+
+    Event.query.filter(Event.id.in_(snap['event_ids']), Event.created_by_id.is_(None)) \
+        .update({'created_by_id': new_uid}, synchronize_session=False)
+    GalleryItem.query.filter(GalleryItem.id.in_(snap['gallery_ids']), GalleryItem.created_by_id.is_(None)) \
+        .update({'created_by_id': new_uid}, synchronize_session=False)
+
+    tid = item.id
+    db.session.delete(item)
+    db.session.commit()
+
+    # Put the uploaded files back, then clear the trash copy
+    trash_dir = os.path.join(app.config['TRASH_FOLDER'], str(tid))
+    for kind, cfg in _TRASH_FILE_FOLDERS.items():
+        d = os.path.join(trash_dir, kind)
+        if os.path.isdir(d):
+            for fn in os.listdir(d):
+                shutil.copy2(os.path.join(d, fn), os.path.join(app.config[cfg], fn))
+    shutil.rmtree(trash_dir, ignore_errors=True)
+    return True, 'Restored.'
+
+
+def remove_demo_data():
+    """Delete the old demo accounts (and everything tied to them) from an existing database.
+
+    Safe to run on every start: it does nothing once the demo users are gone.
+    """
+    demo_users = User.query.filter(User.email.in_(DEMO_EMAILS)).all()
+    if demo_users:
+        purge_users([u.id for u in demo_users])
+        print(f'🧹 Removed {len(demo_users)} demo user(s) and their data.')
+    retire_default_admin()
+
+
+def ensure_schema_updates():
+    """db.create_all() never alters existing tables, so add new columns by hand (SQLite and PostgreSQL)."""
+    from sqlalchemy import inspect as sa_inspect, text
+    cols = {c['name'] for c in sa_inspect(db.engine).get_columns('user')}
+    if 'email_notifications' not in cols:
+        with db.engine.begin() as conn:
+            conn.execute(text('ALTER TABLE "user" ADD COLUMN email_notifications BOOLEAN DEFAULT TRUE'))
+
+
 # ==================== INIT ====================
 
 with app.app_context():
     db.create_all()
+    ensure_schema_updates()
     seed_data()
+    remove_demo_data()
 
 
 if __name__ == '__main__':

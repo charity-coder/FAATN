@@ -79,3 +79,20 @@ Then redeploy, and click Verify in each console. Submit https://yourdomain.ng/si
 - Landing pages with no listed members are `noindex` and left out of `sitemap.xml` until someone is listed
 - `templates/index.html`: "Popular searches" internal links
 - To add a trade or city, edit the two dictionaries near `seo_landing` in `app.py`
+
+---
+
+## Merge update (admin screens, hardening, update emails)
+
+- **Admin screens added** (the routes existed but the pages did not): Add a user, Reset password, Delete, and a Trash page (`admin_trash.html`, previously a crash). Sidebar link to Trash.
+- **No default admin password.** `seed_data()` needs `ADMIN_PASSWORD`; `flask create-admin` added; max 2 admins everywhere. `admin@faatn.ng` is auto-removed only if it still uses a public password and another admin exists.
+- **Passwords are never emailed.** New users get a set-your-password link; admin "set password" sends only a "password changed" notice; an admin cannot set another admin's password.
+- **Forgot-password** throttled (1 email / 5 min per account) and a "password changed" notice is sent after every reset.
+- **Update emails** respect an opt-out (`user.email_notifications`, profile checkbox, unsubscribe link + List-Unsubscribe header): profile-visit emails, admin broadcasts, and a new "email this to members" checkbox when publishing Events / News.
+- **Help form**: one-time confirmation to the visitor (capped per address) and optional admin alert (`ADMIN_NOTIFY_EMAIL`).
+- **Brevo API** added next to Resend and SMTP. Admin dashboard shows email status and a "Send a test email" button.
+- Schema: `ensure_schema_updates()` adds `user.email_notifications` automatically (SQLite and PostgreSQL).
+- Added `static/favicon/favicon.ico`.
+- **Change password** card on the Profile page (any signed-in user), and a red warning on the Admin page while the admin password is a publicly known default.
+- Local `.env` (git-ignored) creates the first admin on first start. Replace the starting password straight away.
+
