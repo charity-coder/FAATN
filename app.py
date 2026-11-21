@@ -977,6 +977,7 @@ def robots_txt():
         'Disallow: /forgot-password',
         'Disallow: /reset-password/',
         'Disallow: /verify-email/',
+        'Disallow: /email/unsubscribe/',
         '',
         'User-agent: Googlebot',
         'Allow: /',
@@ -1003,6 +1004,10 @@ def sitemap_xml():
         ('marketplace', 0.8, 'daily'),
         ('events_news_public', 0.7, 'daily'),
         ('gallery_public', 0.6, 'weekly'),
+        ('find_suppliers', 0.8, 'daily'),
+        ('market_hub', 0.7, 'daily'),
+        ('institutions', 0.6, 'monthly'),
+        ('need_help', 0.5, 'monthly'),
     ]
     urls = []
     for endpoint, priority, freq in pages:
@@ -1014,6 +1019,12 @@ def sitemap_xml():
         for ev in Event.query.order_by(Event.created_at.desc()).limit(500).all():
             lastmod = ev.created_at.strftime('%Y-%m-%d') if ev.created_at else None
             urls.append((site + url_for('events_news_detail', event_id=ev.id), lastmod, 'monthly', 0.5))
+    except Exception:
+        pass
+    try:
+        for p in Product.query.filter_by(is_active=True).order_by(Product.created_at.desc()).limit(1000).all():
+            lastmod = p.created_at.strftime('%Y-%m-%d') if p.created_at else None
+            urls.append((site + url_for('marketplace_detail', product_id=p.id), lastmod, 'weekly', 0.6))
     except Exception:
         pass
     try:
@@ -1031,7 +1042,7 @@ def sitemap_xml():
            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
     for loc, lastmod, freq, priority in urls:
         xml.append('  <url>')
-        xml.append(f'    <loc>{loc}</loc>')
+        xml.append(f'    <loc>{html_escape(loc)}</loc>')
         if lastmod:
             xml.append(f'    <lastmod>{lastmod}</lastmod>')
         xml.append(f'    <changefreq>{freq}</changefreq>')
@@ -1365,6 +1376,31 @@ def verify_email(token):
     db.session.commit()
     flash('Email verified successfully! You can now log in.', 'success')
     return redirect(url_for('login'))
+
+
+@app.route('/dashboard/profile/password', methods=['POST'])
+@login_required
+def change_password():
+    """Any signed-in member (including the admin) changes their own password."""
+    current = request.form.get('current_password', '')
+    new = request.form.get('new_password', '')
+    confirm = request.form.get('confirm_password', '')
+    if not current_user.check_password(current):
+        flash('Your current password is not correct. Password not changed.', 'danger')
+    elif len(new) < 8:
+        flash('The new password must be at least 8 characters.', 'danger')
+    elif new in KNOWN_PUBLIC_PASSWORDS:
+        flash('That password is publicly known. Choose a different one.', 'danger')
+    elif new != confirm:
+        flash('The new passwords do not match.', 'danger')
+    else:
+        current_user.set_password(new)
+        current_user.reset_token = None
+        current_user.reset_token_expires = None
+        db.session.commit()
+        send_password_changed_email(current_user)
+        flash('Your password was changed.', 'success')
+    return redirect(url_for('profile') + '#password')
 
 
 @app.route('/dashboard/resend-verification', methods=['POST'])
@@ -2716,6 +2752,7 @@ def admin_dashboard():
         max_admins=MAX_ADMINS,
         can_create_admin=n_admins < MAX_ADMINS,
         mail_transport=mail_transport(),
+        weak_password=any(current_user.check_password(p) for p in KNOWN_PUBLIC_PASSWORDS),
     )
 
 
@@ -2928,7 +2965,7 @@ def admin_reset_password(user_id):
     The user is always told (by email) that the password changed, but the email never contains it."""
     user = User.query.get_or_404(user_id)
     if user.id == current_user.id:
-        flash('To change your own password use "Forgot password" on the login page.', 'warning')
+        flash('To change your own password use the "Change password" card on your Profile page.', 'warning')
         return redirect(url_for('admin_dashboard'))
 
     mode = (request.form.get('mode') or 'link').strip().lower()  # link | set

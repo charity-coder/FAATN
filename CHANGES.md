@@ -93,3 +93,7 @@ Then redeploy, and click Verify in each console. Submit https://yourdomain.ng/si
 - **Brevo API** added next to Resend and SMTP. Admin dashboard shows email status and a "Send a test email" button.
 - Schema: `ensure_schema_updates()` adds `user.email_notifications` automatically (SQLite and PostgreSQL).
 - Added `static/favicon/favicon.ico`.
+- **Change password** card on the Profile page (any signed-in user), and a red warning on the Admin page while the admin password is a publicly known default.
+- Local `.env` (git-ignored) creates the first admin on first start. Replace the starting password straight away.
+- **Sitemap**: now also lists `/find/suppliers`, `/market-hub`, `/institutions`, `/need-help` and every active marketplace listing; URLs are XML-escaped; `robots.txt` hides `/email/unsubscribe/`.
+- Homepage `<title>` typo fixed (it read "Artisans,& and Technicians").
