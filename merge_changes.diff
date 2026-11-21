@@ -1,6 +1,6 @@
-diff -ruN -x static -x __pycache__ -x .env a/.env.example b/.env.example
+diff -ruN -x static -x __pycache__ a/.env.example b/.env.example
 --- a/.env.example	1970-01-01 00:00:00.000000000 +0000
-+++ b/.env.example	2026-11-20 05:22:27.598750669 +0000
++++ b/.env.example	2026-11-19 06:36:53.996055473 +0000
 @@ -0,0 +1,24 @@
 +# --- First administrator (required; there is no default password) ---
 +ADMIN_EMAIL=you@example.com
@@ -26,10 +26,10 @@ diff -ruN -x static -x __pycache__ -x .env a/.env.example b/.env.example
 +
 +# Optional: alert email for new sign-ups / help requests
 +ADMIN_NOTIFY_EMAIL=
-diff -ruN -x static -x __pycache__ -x .env a/CHANGES.md b/CHANGES.md
---- a/CHANGES.md	2026-11-20 05:22:26.954731796 +0000
-+++ b/CHANGES.md	2026-11-20 05:22:27.593713852 +0000
-@@ -79,3 +79,20 @@
+diff -ruN -x static -x __pycache__ a/CHANGES.md b/CHANGES.md
+--- a/CHANGES.md	2026-11-19 06:36:53.427197776 +0000
++++ b/CHANGES.md	2026-11-19 06:36:53.993417525 +0000
+@@ -79,3 +79,17 @@
  - Landing pages with no listed members are `noindex` and left out of `sitemap.xml` until someone is listed
  - `templates/index.html`: "Popular searches" internal links
  - To add a trade or city, edit the two dictionaries near `seo_landing` in `app.py`
@@ -47,12 +47,9 @@ diff -ruN -x static -x __pycache__ -x .env a/CHANGES.md b/CHANGES.md
 +- **Brevo API** added next to Resend and SMTP. Admin dashboard shows email status and a "Send a test email" button.
 +- Schema: `ensure_schema_updates()` adds `user.email_notifications` automatically (SQLite and PostgreSQL).
 +- Added `static/favicon/favicon.ico`.
-+- **Change password** card on the Profile page (any signed-in user), and a red warning on the Admin page while the admin password is a publicly known default.
-+- Local `.env` (git-ignored) creates the first admin on first start. Replace the starting password straight away.
-+
-diff -ruN -x static -x __pycache__ -x .env a/DEPLOY.md b/DEPLOY.md
---- a/DEPLOY.md	2026-11-20 05:22:26.959073762 +0000
-+++ b/DEPLOY.md	2026-11-20 05:22:27.593736107 +0000
+diff -ruN -x static -x __pycache__ a/DEPLOY.md b/DEPLOY.md
+--- a/DEPLOY.md	2026-11-19 06:36:53.428276235 +0000
++++ b/DEPLOY.md	2026-11-19 06:36:53.993426292 +0000
 @@ -44,6 +44,9 @@
  | `DATABASE_URL` | Copy **Internal Database URL** from the Postgres service |
  | `SECRET_KEY` | Any long random string (Render can auto-generate) |
@@ -75,9 +72,9 @@ diff -ruN -x static -x __pycache__ -x .env a/DEPLOY.md b/DEPLOY.md
  
  ---
  
-diff -ruN -x static -x __pycache__ -x .env a/README.md b/README.md
---- a/README.md	2026-11-20 05:22:26.959433570 +0000
-+++ b/README.md	2026-11-20 05:22:27.593773980 +0000
+diff -ruN -x static -x __pycache__ a/README.md b/README.md
+--- a/README.md	2026-11-19 06:36:53.428550567 +0000
++++ b/README.md	2026-11-19 06:36:53.993439887 +0000
 @@ -69,8 +69,16 @@
  export FLASK_DEBUG=1
  ```
@@ -97,9 +94,9 @@ diff -ruN -x static -x __pycache__ -x .env a/README.md b/README.md
  
  ---
  
-diff -ruN -x static -x __pycache__ -x .env a/app.py b/app.py
---- a/app.py	2026-11-20 05:22:26.869598538 +0000
-+++ b/app.py	2026-11-20 05:22:27.593607117 +0000
+diff -ruN -x static -x __pycache__ a/app.py b/app.py
+--- a/app.py	2026-11-19 06:36:53.339795660 +0000
++++ b/app.py	2026-11-19 06:36:53.993368921 +0000
 @@ -15,6 +15,10 @@
  from email.message import EmailMessage
  from email.utils import formataddr
@@ -439,39 +436,7 @@ diff -ruN -x static -x __pycache__ -x .env a/app.py b/app.py
          # Send the verification link by email
          if send_verification_email(user, token):
              flash(f'Registration successful! We sent a verification link to {email}. '
-@@ -1205,6 +1367,31 @@
-     return redirect(url_for('login'))
- 
- 
-+@app.route('/dashboard/profile/password', methods=['POST'])
-+@login_required
-+def change_password():
-+    """Any signed-in member (including the admin) changes their own password."""
-+    current = request.form.get('current_password', '')
-+    new = request.form.get('new_password', '')
-+    confirm = request.form.get('confirm_password', '')
-+    if not current_user.check_password(current):
-+        flash('Your current password is not correct. Password not changed.', 'danger')
-+    elif len(new) < 8:
-+        flash('The new password must be at least 8 characters.', 'danger')
-+    elif new in KNOWN_PUBLIC_PASSWORDS:
-+        flash('That password is publicly known. Choose a different one.', 'danger')
-+    elif new != confirm:
-+        flash('The new passwords do not match.', 'danger')
-+    else:
-+        current_user.set_password(new)
-+        current_user.reset_token = None
-+        current_user.reset_token_expires = None
-+        db.session.commit()
-+        send_password_changed_email(current_user)
-+        flash('Your password was changed.', 'success')
-+    return redirect(url_for('profile') + '#password')
-+
-+
- @app.route('/dashboard/resend-verification', methods=['POST'])
- @login_required
- def resend_verification():
-@@ -1228,7 +1415,10 @@
+@@ -1228,7 +1390,10 @@
      if request.method == 'POST':
          email = request.form.get('email', '').strip().lower()
          user = User.query.filter_by(email=email).first()
@@ -483,7 +448,7 @@ diff -ruN -x static -x __pycache__ -x .env a/app.py b/app.py
              token = secrets.token_urlsafe(32)
              user.reset_token = token
              user.reset_token_expires = datetime.utcnow() + timedelta(hours=2)
-@@ -1258,7 +1448,9 @@
+@@ -1258,7 +1423,9 @@
              user.set_password(password)
              user.reset_token = None
              user.reset_token_expires = None
@@ -493,7 +458,7 @@ diff -ruN -x static -x __pycache__ -x .env a/app.py b/app.py
              flash('Password updated. You can log in now.', 'success')
              return redirect(url_for('login'))
      return render_template('reset_password.html', token=token)
-@@ -1322,6 +1514,7 @@
+@@ -1322,6 +1489,7 @@
          current_user.experience_years = int(request.form.get('experience_years') or 0)
          current_user.portfolio = request.form.get('portfolio', current_user.portfolio)
          current_user.needs = request.form.get('needs', current_user.needs)
@@ -501,7 +466,7 @@ diff -ruN -x static -x __pycache__ -x .env a/app.py b/app.py
  
          # Profile picture upload
          file = request.files.get('profile_pic')
-@@ -1469,7 +1662,10 @@
+@@ -1469,7 +1637,10 @@
          )
          db.session.add(event)
          db.session.commit()
@@ -513,7 +478,7 @@ diff -ruN -x static -x __pycache__ -x .env a/app.py b/app.py
          return redirect(url_for('events_news_public'))
  
      items = Event.query.filter_by(is_active=True).order_by(Event.created_at.desc()).all()
-@@ -1582,7 +1778,10 @@
+@@ -1582,7 +1753,10 @@
          )
          db.session.add(event)
          db.session.commit()
@@ -525,7 +490,7 @@ diff -ruN -x static -x __pycache__ -x .env a/app.py b/app.py
          return redirect(url_for('events'))
  
      all_events = Event.query.filter_by(is_active=True).order_by(
-@@ -1749,6 +1948,20 @@
+@@ -1749,6 +1923,20 @@
          )
          db.session.add(hr)
          db.session.commit()
@@ -546,7 +511,7 @@ diff -ruN -x static -x __pycache__ -x .env a/app.py b/app.py
          flash('Your request has been submitted. FAATN will route it to suitable registered technicians.', 'success')
          return redirect(url_for('need_help'))
  
-@@ -2187,18 +2400,19 @@
+@@ -2187,18 +2375,19 @@
                  seen.pop(k, None)
          session['profile_visits'] = seen
  
@@ -570,16 +535,15 @@ diff -ruN -x static -x __pycache__ -x .env a/app.py b/app.py
      except Exception as exc:  # never break the public page because of a notification
          db.session.rollback()
          print(f'[visit] notification failed: {exc}', flush=True)
-@@ -2526,6 +2740,8 @@
+@@ -2526,6 +2715,7 @@
          admin_count=n_admins,
          max_admins=MAX_ADMINS,
          can_create_admin=n_admins < MAX_ADMINS,
 +        mail_transport=mail_transport(),
-+        weak_password=any(current_user.check_password(p) for p in KNOWN_PUBLIC_PASSWORDS),
      )
  
  
-@@ -2620,16 +2836,17 @@
+@@ -2620,16 +2810,17 @@
  
          if also_email:
              for u in recipients:
@@ -601,7 +565,7 @@ diff -ruN -x static -x __pycache__ -x .env a/app.py b/app.py
                      emailed += 1
  
          if len(recipients) == 1:
-@@ -2659,32 +2876,39 @@
+@@ -2659,32 +2850,39 @@
  @app.route('/dashboard/admin/create-user', methods=['POST'])
  @admin_required
  def admin_create_user():
@@ -648,7 +612,7 @@ diff -ruN -x static -x __pycache__ -x .env a/app.py b/app.py
      user = User(
          email=email,
          full_name=full_name,
-@@ -2693,7 +2917,7 @@
+@@ -2693,7 +2891,7 @@
          location_state=location_state or None,
          occupation=occupation or None,
          verified=(role == 'admin'),
@@ -657,7 +621,7 @@ diff -ruN -x static -x __pycache__ -x .env a/app.py b/app.py
          listing_category='verified' if role == 'admin' else (
              'registered' if role in MEMBER_ROLES else 'public'
          ),
-@@ -2702,38 +2926,22 @@
+@@ -2702,38 +2900,22 @@
      db.session.add(user)
      db.session.commit()
  
@@ -708,7 +672,7 @@ diff -ruN -x static -x __pycache__ -x .env a/app.py b/app.py
      flash(msg, 'success')
      return redirect(url_for('admin_dashboard'))
  
-@@ -2741,70 +2949,54 @@
+@@ -2741,70 +2923,54 @@
  @app.route('/dashboard/admin/user/<int:user_id>/reset-password', methods=['POST'])
  @admin_required
  def admin_reset_password(user_id):
@@ -719,7 +683,7 @@ diff -ruN -x static -x __pycache__ -x .env a/app.py b/app.py
      user = User.query.get_or_404(user_id)
      if user.id == current_user.id:
 -        flash('Use your profile page to change your own password.', 'warning')
-+        flash('To change your own password use the "Change password" card on your Profile page.', 'warning')
++        flash('To change your own password use "Forgot password" on the login page.', 'warning')
          return redirect(url_for('admin_dashboard'))
  
 -    mode = (request.form.get('mode') or 'set').strip().lower()  # set | link
@@ -815,7 +779,7 @@ diff -ruN -x static -x __pycache__ -x .env a/app.py b/app.py
      return redirect(url_for('admin_dashboard'))
  
  
-@@ -2881,28 +3073,34 @@
+@@ -2881,28 +3047,34 @@
  
  # ==================== SEED DATA ====================
  
@@ -825,10 +789,10 @@ diff -ruN -x static -x __pycache__ -x .env a/app.py b/app.py
 -        return
 +DEFAULT_ADMIN_EMAIL = 'admin@faatn.ng'   # the old default admin (public password) - see retire_default_admin()
 +KNOWN_PUBLIC_PASSWORDS = ('change-me-on-first-login', 'Admin@FAATN2026')
-+
  
 -    # Admin — password from env so it is never published on the website or in docs
 -    admin_password = os.environ.get('ADMIN_PASSWORD', 'change-me-on-first-login')
++
 +def create_admin_account(email, full_name, password):
 +    """Create an administrator. Returns (user, error). Enforces MAX_ADMINS."""
 +    email = (email or '').strip().lower()
@@ -858,14 +822,14 @@ diff -ruN -x static -x __pycache__ -x .env a/app.py b/app.py
 -
      db.session.commit()
 +    return admin, None
-+
  
++
 +def _seed_sample_content(admin):
 +    """Sample trainings / opportunities / event (NOT accounts), created only with the very first admin."""
      # Trainings
      trainings = [
          Training(title='Advanced Woodworking & CNC Operation', provider='FAATN Skills Hub - Anambra', description='Master modern CNC machines and precision woodworking techniques for high-value furniture production.', duration='6 weeks', skill_gap='CNC & Digital Fabrication', location='Awka, Anambra'),
-@@ -2941,6 +3139,53 @@
+@@ -2941,6 +3113,53 @@
      print('✅ Database seeded successfully!')
  
  
@@ -919,7 +883,7 @@ diff -ruN -x static -x __pycache__ -x .env a/app.py b/app.py
  
  # Legacy demo accounts (removed safely on every app start)
  DEMO_EMAILS = (
-@@ -3219,16 +3464,26 @@
+@@ -3219,16 +3438,26 @@
      Safe to run on every start: it does nothing once the demo users are gone.
      """
      demo_users = User.query.filter(User.email.in_(DEMO_EMAILS)).all()
@@ -950,9 +914,9 @@ diff -ruN -x static -x __pycache__ -x .env a/app.py b/app.py
      seed_data()
      remove_demo_data()
  
-diff -ruN -x static -x __pycache__ -x .env a/render.yaml b/render.yaml
---- a/render.yaml	2026-11-20 05:22:26.959559013 +0000
-+++ b/render.yaml	2026-11-20 05:22:27.593805337 +0000
+diff -ruN -x static -x __pycache__ a/render.yaml b/render.yaml
+--- a/render.yaml	2026-11-19 06:36:53.428656955 +0000
++++ b/render.yaml	2026-11-19 06:36:53.993447663 +0000
 @@ -16,6 +16,18 @@
          value: "3.12.0"
        - key: FLASK_DEBUG
@@ -972,9 +936,9 @@ diff -ruN -x static -x __pycache__ -x .env a/render.yaml b/render.yaml
  
  databases:
    - name: faatn-gate-db
-diff -ruN -x static -x __pycache__ -x .env a/templates/admin_trash.html b/templates/admin_trash.html
+diff -ruN -x static -x __pycache__ a/templates/admin_trash.html b/templates/admin_trash.html
 --- a/templates/admin_trash.html	1970-01-01 00:00:00.000000000 +0000
-+++ b/templates/admin_trash.html	2026-11-20 05:22:27.598730717 +0000
++++ b/templates/admin_trash.html	2026-11-19 06:36:53.996046827 +0000
 @@ -0,0 +1,48 @@
 +{% extends "dashboard_base.html" %}
 +{% block title %}Trash{% endblock %}
@@ -1024,28 +988,16 @@ diff -ruN -x static -x __pycache__ -x .env a/templates/admin_trash.html b/templa
 +  </div>
 +</div>
 +{% endblock %}
-diff -ruN -x static -x __pycache__ -x .env a/templates/dashboard_admin.html b/templates/dashboard_admin.html
---- a/templates/dashboard_admin.html	2026-11-20 05:22:27.588727927 +0000
-+++ b/templates/dashboard_admin.html	2026-11-20 05:22:27.597945280 +0000
-@@ -2,6 +2,12 @@
- {% block title %}Admin Dashboard{% endblock %}
- 
- {% block dashboard_content %}
-+{% if weak_password %}
-+<div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:10px;padding:1rem 1.25rem;margin-bottom:1rem;">
-+  <strong>⚠️ Your admin password is publicly known.</strong> Anyone who has seen the project code can sign in as you.
-+  <a href="{{ url_for('profile') }}#password" style="color:#991b1b;font-weight:700;text-decoration:underline;">Change it now</a>.
-+</div>
-+{% endif %}
- <section class="admin-overview-section">
- <div class="topbar">
-   <div>
-@@ -114,8 +120,52 @@
+diff -ruN -x static -x __pycache__ a/templates/dashboard_admin.html b/templates/dashboard_admin.html
+--- a/templates/dashboard_admin.html	2026-11-19 06:36:53.990519372 +0000
++++ b/templates/dashboard_admin.html	2026-11-19 06:36:53.995722454 +0000
+@@ -114,8 +114,52 @@
    </div>
  </div>
  
 +{# ---------- Email status ---------- #}
-+<div class="dash-card">
+ <div class="dash-card">
+-  <div class="dash-card-header"><h3>Recent Registrations</h3></div>
 +  <div class="dash-card-header"><h3>Email delivery</h3></div>
 +  <div class="dash-card-body">
 +    {% if mail_transport %}
@@ -1081,8 +1033,7 @@ diff -ruN -x static -x __pycache__ -x .env a/templates/dashboard_admin.html b/te
 +  </div>
 +</div>
 +
- <div class="dash-card">
--  <div class="dash-card-header"><h3>Recent Registrations</h3></div>
++<div class="dash-card">
 +  <div class="dash-card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;">
 +    <h3>Recent Registrations</h3>
 +    <div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;">
@@ -1094,7 +1045,7 @@ diff -ruN -x static -x __pycache__ -x .env a/templates/dashboard_admin.html b/te
    <div class="dash-card-body">
      <div class="table-responsive">
        <table>
-@@ -128,6 +178,7 @@
+@@ -128,6 +172,7 @@
              <th>Joined</th>
              <th>Verified</th>
              <th>Listing category</th>
@@ -1102,7 +1053,7 @@ diff -ruN -x static -x __pycache__ -x .env a/templates/dashboard_admin.html b/te
            </tr>
          </thead>
          <tbody>
-@@ -149,6 +200,28 @@
+@@ -149,6 +194,28 @@
                  <button type="submit" class="btn btn-primary btn-sm">Set</button>
                </form>
              </td>
@@ -1131,9 +1082,9 @@ diff -ruN -x static -x __pycache__ -x .env a/templates/dashboard_admin.html b/te
            </tr>
            {% endfor %}
          </tbody>
-diff -ruN -x static -x __pycache__ -x .env a/templates/dashboard_base.html b/templates/dashboard_base.html
---- a/templates/dashboard_base.html	2026-11-20 05:22:27.588950228 +0000
-+++ b/templates/dashboard_base.html	2026-11-20 05:22:27.597995194 +0000
+diff -ruN -x static -x __pycache__ a/templates/dashboard_base.html b/templates/dashboard_base.html
+--- a/templates/dashboard_base.html	2026-11-19 06:36:53.990660384 +0000
++++ b/templates/dashboard_base.html	2026-11-19 06:36:53.995746144 +0000
 @@ -193,6 +193,9 @@
          <li><a href="{{ url_for('admin_dashboard') }}" class="{% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
            <span class="icon">⚙️</span> Admin
@@ -1144,9 +1095,9 @@ diff -ruN -x static -x __pycache__ -x .env a/templates/dashboard_base.html b/tem
          {% endif %}
        </ul>
  
-diff -ruN -x static -x __pycache__ -x .env a/templates/events.html b/templates/events.html
---- a/templates/events.html	2026-11-20 05:22:27.589087002 +0000
-+++ b/templates/events.html	2026-11-20 05:22:27.598044745 +0000
+diff -ruN -x static -x __pycache__ a/templates/events.html b/templates/events.html
+--- a/templates/events.html	2026-11-19 06:36:53.990747855 +0000
++++ b/templates/events.html	2026-11-19 06:36:53.995765588 +0000
 @@ -51,6 +51,9 @@
            <label>Image</label>
            <input type="file" name="image" class="form-control" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp">
@@ -1157,9 +1108,9 @@ diff -ruN -x static -x __pycache__ -x .env a/templates/events.html b/templates/e
          <button type="submit" class="btn btn-primary">Publish</button>
        </form>
      </div>
-diff -ruN -x static -x __pycache__ -x .env a/templates/events_news_public.html b/templates/events_news_public.html
---- a/templates/events_news_public.html	2026-11-20 05:22:27.589208302 +0000
-+++ b/templates/events_news_public.html	2026-11-20 05:22:27.598086369 +0000
+diff -ruN -x static -x __pycache__ a/templates/events_news_public.html b/templates/events_news_public.html
+--- a/templates/events_news_public.html	2026-11-19 06:36:53.990841593 +0000
++++ b/templates/events_news_public.html	2026-11-19 06:36:53.995783177 +0000
 @@ -49,6 +49,9 @@
            <label>Image</label>
            <input type="file" name="image" class="form-control" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp">
@@ -1170,9 +1121,9 @@ diff -ruN -x static -x __pycache__ -x .env a/templates/events_news_public.html b
          <button type="submit" class="btn btn-primary">Publish</button>
        </form>
      </div>
-diff -ruN -x static -x __pycache__ -x .env a/templates/forgot_password.html b/templates/forgot_password.html
---- a/templates/forgot_password.html	2026-11-20 05:22:27.589380803 +0000
-+++ b/templates/forgot_password.html	2026-11-20 05:22:27.598153831 +0000
+diff -ruN -x static -x __pycache__ a/templates/forgot_password.html b/templates/forgot_password.html
+--- a/templates/forgot_password.html	2026-11-19 06:36:53.990963804 +0000
++++ b/templates/forgot_password.html	2026-11-19 06:36:53.995806584 +0000
 @@ -5,7 +5,7 @@
    <div class="auth-card">
      <div class="auth-header">
@@ -1182,10 +1133,10 @@ diff -ruN -x static -x __pycache__ -x .env a/templates/forgot_password.html b/te
      </div>
      <form method="POST">
        <div class="form-group">
-diff -ruN -x static -x __pycache__ -x .env a/templates/profile.html b/templates/profile.html
---- a/templates/profile.html	2026-11-20 05:22:27.590680716 +0000
-+++ b/templates/profile.html	2026-11-20 05:22:27.598542878 +0000
-@@ -111,9 +111,28 @@
+diff -ruN -x static -x __pycache__ a/templates/profile.html b/templates/profile.html
+--- a/templates/profile.html	2026-11-19 06:36:53.991743346 +0000
++++ b/templates/profile.html	2026-11-19 06:36:53.995937581 +0000
+@@ -111,6 +111,13 @@
            <textarea name="portfolio" class="form-control" rows="4">{{ current_user.portfolio or '' }}</textarea>
          </div>
  
@@ -1199,18 +1150,3 @@ diff -ruN -x static -x __pycache__ -x .env a/templates/profile.html b/templates/
          <button type="submit" class="btn btn-primary">Save Profile</button>
        </form>
      </div>
-   </div>
-+
-+  <div class="dash-card" id="password" style="margin-top:1.5rem;">
-+    <div class="dash-card-header"><h3>Change password</h3></div>
-+    <div class="dash-card-body">
-+      <form method="POST" action="{{ url_for('change_password') }}" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.75rem;align-items:end;">
-+        <div class="form-group"><label>Current password</label><input type="password" name="current_password" class="form-control" required autocomplete="current-password"></div>
-+        <div class="form-group"><label>New password (min 8 characters)</label><input type="password" name="new_password" class="form-control" minlength="8" required autocomplete="new-password"></div>
-+        <div class="form-group"><label>Confirm new password</label><input type="password" name="confirm_password" class="form-control" minlength="8" required autocomplete="new-password"></div>
-+        <div class="form-group"><button type="submit" class="btn btn-primary">Change password</button></div>
-+      </form>
-+    </div>
-+  </div>
- </div>
- {% endblock %}

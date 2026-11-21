@@ -2,12 +2,6 @@
 {% block title %}Admin Dashboard{% endblock %}
 
 {% block dashboard_content %}
-{% if weak_password %}
-<div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:10px;padding:1rem 1.25rem;margin-bottom:1rem;">
-  <strong>⚠️ Your admin password is publicly known.</strong> Anyone who has seen the project code can sign in as you.
-  <a href="{{ url_for('profile') }}#password" style="color:#991b1b;font-weight:700;text-decoration:underline;">Change it now</a>.
-</div>
-{% endif %}
 <section class="admin-overview-section">
 <div class="topbar">
   <div>

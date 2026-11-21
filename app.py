@@ -1367,31 +1367,6 @@ def verify_email(token):
     return redirect(url_for('login'))
 
 
-@app.route('/dashboard/profile/password', methods=['POST'])
-@login_required
-def change_password():
-    """Any signed-in member (including the admin) changes their own password."""
-    current = request.form.get('current_password', '')
-    new = request.form.get('new_password', '')
-    confirm = request.form.get('confirm_password', '')
-    if not current_user.check_password(current):
-        flash('Your current password is not correct. Password not changed.', 'danger')
-    elif len(new) < 8:
-        flash('The new password must be at least 8 characters.', 'danger')
-    elif new in KNOWN_PUBLIC_PASSWORDS:
-        flash('That password is publicly known. Choose a different one.', 'danger')
-    elif new != confirm:
-        flash('The new passwords do not match.', 'danger')
-    else:
-        current_user.set_password(new)
-        current_user.reset_token = None
-        current_user.reset_token_expires = None
-        db.session.commit()
-        send_password_changed_email(current_user)
-        flash('Your password was changed.', 'success')
-    return redirect(url_for('profile') + '#password')
-
-
 @app.route('/dashboard/resend-verification', methods=['POST'])
 @login_required
 def resend_verification():
@@ -2741,7 +2716,6 @@ def admin_dashboard():
         max_admins=MAX_ADMINS,
         can_create_admin=n_admins < MAX_ADMINS,
         mail_transport=mail_transport(),
-        weak_password=any(current_user.check_password(p) for p in KNOWN_PUBLIC_PASSWORDS),
     )
 
 
@@ -2954,7 +2928,7 @@ def admin_reset_password(user_id):
     The user is always told (by email) that the password changed, but the email never contains it."""
     user = User.query.get_or_404(user_id)
     if user.id == current_user.id:
-        flash('To change your own password use the "Change password" card on your Profile page.', 'warning')
+        flash('To change your own password use "Forgot password" on the login page.', 'warning')
         return redirect(url_for('admin_dashboard'))
 
     mode = (request.form.get('mode') or 'link').strip().lower()  # link | set
