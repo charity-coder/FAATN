@@ -312,6 +312,7 @@ MAIL_FROM = (os.environ.get('MAIL_FROM', '') or MAIL_USERNAME).strip()
 MAIL_FROM_NAME = os.environ.get('MAIL_FROM_NAME', 'FAATN-GATE').strip()
 RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '').strip()
 BREVO_API_KEY = os.environ.get('BREVO_API_KEY', '').strip()      # HTTPS API; works on Render free, accepts a single verified sender
+MAIL_REPLY_TO = os.environ.get('MAIL_REPLY_TO', '').strip()          # where replies to system emails go (e.g. your Gmail)
 ADMIN_NOTIFY_EMAIL = os.environ.get('ADMIN_NOTIFY_EMAIL', '').strip()  # optional: alert for new sign-ups / help requests
 VISIT_EMAIL = os.environ.get('VISIT_EMAIL', '1') != '0'
 
@@ -347,6 +348,8 @@ def _deliver_email_raw(to_addr, subject, text_body, html_body, unsubscribe_url=N
             'from': formataddr((MAIL_FROM_NAME, MAIL_FROM)),
             'to': [to_addr], 'subject': subject, 'text': text_body, 'html': html_body or None,
         }
+        if MAIL_REPLY_TO:
+            data['reply_to'] = MAIL_REPLY_TO
         if unsubscribe_url:
             data['headers'] = {'List-Unsubscribe': f'<{unsubscribe_url}>'}
         req = urllib.request.Request(
@@ -359,6 +362,8 @@ def _deliver_email_raw(to_addr, subject, text_body, html_body, unsubscribe_url=N
                 'subject': subject, 'textContent': text_body}
         if html_body:
             data['htmlContent'] = html_body
+        if MAIL_REPLY_TO:
+            data['replyTo'] = {'email': MAIL_REPLY_TO}
         if unsubscribe_url:
             data['headers'] = {'List-Unsubscribe': f'<{unsubscribe_url}>'}
         req = urllib.request.Request(
@@ -374,6 +379,8 @@ def _deliver_email_raw(to_addr, subject, text_body, html_body, unsubscribe_url=N
         msg['From'] = formataddr((MAIL_FROM_NAME, MAIL_FROM))
         msg['To'] = to_addr
         msg['Subject'] = subject
+        if MAIL_REPLY_TO:
+            msg['Reply-To'] = MAIL_REPLY_TO
         if unsubscribe_url:
             msg['List-Unsubscribe'] = f'<{unsubscribe_url}>'
         msg.set_content(text_body)

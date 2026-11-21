@@ -97,3 +97,4 @@ Then redeploy, and click Verify in each console. Submit https://yourdomain.ng/si
 - Local `.env` (git-ignored) creates the first admin on first start. Replace the starting password straight away.
 - **Sitemap**: now also lists `/find/suppliers`, `/market-hub`, `/institutions`, `/need-help` and every active marketplace listing; URLs are XML-escaped; `robots.txt` hides `/email/unsubscribe/`.
 - Homepage `<title>` typo fixed (it read "Artisans,& and Technicians").
+- `MAIL_REPLY_TO` setting (Reply-To header on all three email transports); `PUBLIC_SITE_URL` set to https://faatn-gate.com in `render.yaml` and `.env.example`.
