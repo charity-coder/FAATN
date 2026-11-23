@@ -27,6 +27,14 @@ except ImportError:
     pass
 
 app = Flask(__name__)
+
+# Render Health Check
+@app.route("/healthz", methods=["GET"])
+def healthz():
+    return {"status": "ok"}, 200
+
+# Your other application configurations
+
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'faatn-gate-secret-key-change-in-production-2026')
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 
